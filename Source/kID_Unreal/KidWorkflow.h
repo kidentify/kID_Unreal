@@ -14,14 +14,14 @@ class UKidWorkflow : public UObject
     GENERATED_BODY()
 
 public:
-    void Initialize();
+    void Initialize(TFunction<void(bool)> Callback);
     void CleanUp();
 
     // workflows
     void StartKidSession(const FString& Location);
     void HandleExistingChallenge(const FString& ChallengeId);
     void StartKidSessionWithDOB(const FString& Location, const FString& DOB);
-    bool GetUserAge(const FString& Location, TFunction<void(bool, const FString&)> Callback);
+    void GetUserAge(const FString& Location, TFunction<void(bool, bool, const FString&)> Callback);
     void ValidateAge(TFunction<void(bool)> Callback);
     void GetDefaultPermissions(const FString& Location);
     void ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, const FString& QRCodeUrl, TFunction<void(bool)> OnConsentGranted);

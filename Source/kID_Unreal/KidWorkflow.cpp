@@ -29,7 +29,7 @@ const FString ClientId = TEXT("12345678-1234-1234-1234-123456789012");
 
 bool UKidWorkflow::bShutdown = false;
 
-void UKidWorkflow::Initialize()
+void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
 {
     bShutdown = false;
 
@@ -37,12 +37,14 @@ void UKidWorkflow::Initialize()
     if (!FFileHelper::LoadFileToString(ApiKey, *(FPaths::ProjectDir() + TEXT("/apikey.txt"))))
     {
         UE_LOG(LogTemp, Error, TEXT("Failed to load API key from apikey.txt.  Create a file with your API key in the project root directory."));
+        Callback(false);
         return;
     }
     
     FString payload = TEXT("{ \"clientId\": \"") + ClientId + TEXT("\"}");
 
-    HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/auth/issue-token"), payload, ApiKey, [this](FHttpResponsePtr Response, bool bWasSuccessful)
+    HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/auth/issue-token"), payload, ApiKey, 
+                    [this, Callback](FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bWasSuccessful && Response.IsValid())
         {
@@ -58,6 +60,7 @@ void UKidWorkflow::Initialize()
         {
             UE_LOG(LogTemp, Error, TEXT("Failed to retrieve AuthToken. Response: %s"), *Response->GetContentAsString());
         }
+        Callback(bWasSuccessful);
     });
 }
 
@@ -92,32 +95,35 @@ void UKidWorkflow::StartKidSession(const FString& Location)
     }
     else
     {
-        if (!GetUserAge(Location, [this, Location](bool bShouldVerify, const FString& DOB)
+        GetUserAge(Location, [this, Location](bool ageGateShown, bool bShouldVerify, const FString& DOB)
         {
-            if (bShouldVerify)
-            {
-                ValidateAge([this, Location, DOB](bool bValidated)
+            if (ageGateShown) {
+                if (bShouldVerify)
                 {
-                    if (bValidated)
+                    ValidateAge([this, Location, DOB](bool bValidated)
                     {
-                        StartKidSessionWithDOB(Location, DOB);
-                    }
-                    else
-                    {
-                        HandleProhibitedStatus();
-                    }
-                });
-            }
+                        if (bValidated)
+                        {
+                            StartKidSessionWithDOB(Location, DOB);
+                        }
+                        else
+                        {
+                            HandleProhibitedStatus();
+                        }
+                    });
+                }
+                else
+                {
+                    UE_LOG(LogTemp, Log, TEXT("Location is %s"), *Location);
+                    StartKidSessionWithDOB(Location, DOB);
+                }      
+            } 
             else
             {
-                UE_LOG(LogTemp, Log, TEXT("Location is %s"), *Location);
-                StartKidSessionWithDOB(Location, DOB);
+                UE_LOG(LogTemp, Log, TEXT("No age gate needed for location %s"), *Location);
+                GetDefaultPermissions(Location);
             }
-        }))
-        {
-            UE_LOG(LogTemp, Log, TEXT("No age gate needed for location %s"), *Location);
-            GetDefaultPermissions(Location);
-        }
+        });
     }
 }
 
@@ -212,13 +218,11 @@ void UKidWorkflow::StartKidSessionWithDOB(const FString& Location, const FString
     });
 }
 
-bool UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, const FString&)> Callback)
+void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool, const FString&)> Callback)
 {
-    bool bShouldDisplay = false;
-
     FString Url = BaseUrl + TEXT("/age-gate/should-display?jurisdiction=") + Location;
 
-    HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this, Location, Callback, &bShouldDisplay](FHttpResponsePtr Response, bool bWasSuccessful)
+    HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this, Location, Callback](FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bWasSuccessful && Response.IsValid())
         {
@@ -228,15 +232,19 @@ bool UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, cons
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, JsonResponse))
             {
-                bShouldDisplay = JsonResponse->GetBoolField(TEXT("shouldDisplay"));
+                bool bShouldDisplay = JsonResponse->GetBoolField(TEXT("shouldDisplay"));
                 bool bShouldVerify = JsonResponse->GetBoolField(TEXT("ageAssuranceRequired"));
 
                 if (bShouldDisplay)
                 {
                     ShowAgeGate([Callback, bShouldVerify](const FString& DOB)
                     {
-                        Callback(bShouldVerify, DOB);
+                        Callback(true, bShouldVerify, DOB);
                     });
+                } 
+                else 
+                {    
+                    Callback(false /* ageGateShown */, false /* shouldVerify */, TEXT(""));
                 }
             }
         }
@@ -245,8 +253,6 @@ bool UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, cons
             UE_LOG(LogTemp, Error, TEXT("Call to /age-gate/should-display failed"));
         }
     });
-
-    return bShouldDisplay;
 }
 
 void UKidWorkflow::ValidateAge(TFunction<void(bool)> Callback)
@@ -574,7 +580,8 @@ void UKidWorkflow::UpdateHUDText()
         if (!AuthToken.IsEmpty())
         {
             FString AgeStatus = SessionInfo.IsValid() ? SessionInfo->GetStringField(TEXT("ageStatus")) : TEXT("N/A");
-            FString SessionId = SessionInfo.IsValid() && SessionInfo->HasField(TEXT("sessionId")) ? SessionInfo->GetStringField(TEXT("sessionId")) : TEXT("N/A");
+            FString SessionId = SessionInfo.IsValid() ? 
+                        SessionInfo->HasField(TEXT("sessionId")) ? SessionInfo->GetStringField(TEXT("sessionId")) : TEXT("Default Permissions")  : TEXT("N/A");
             FString ChallengeId;
             FString HUDText = FString::Printf(TEXT("ageStatus: %s sessionId: %s challengeId %s"), *AgeStatus, *SessionId, LoadChallengeId(ChallengeId) ? *ChallengeId : TEXT("N/A"));
             PlayerHUDWidget->SetText(HUDText);

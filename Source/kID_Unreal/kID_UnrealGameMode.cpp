@@ -20,12 +20,22 @@ void AkID_UnrealGameMode::BeginPlay()
     UE_LOG(LogTemp, Log, TEXT("Setting up kID workflow..."));
 
     KidWorkflow = NewObject<UKidWorkflow>(this, UKidWorkflow::StaticClass());
-    KidWorkflow->Initialize();
+    KidWorkflow->Initialize([this](bool bSuccess)
+    {
+        if (bSuccess)
+        {
+            UE_LOG(LogTemp, Log, TEXT("kID workflow initialized successfully!"));
+            KidWorkflow->ShowPlayerHUD();
+            KidWorkflow->ShowDemoControls();
+        }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("kID workflow failed to initialize!"));
+            KidWorkflow->ShowPlayerHUD();
+        }
+    });
 
-    UE_LOG(LogTemp, Log, TEXT("Showing demo controls..."));
-    KidWorkflow->ShowPlayerHUD();
-    KidWorkflow->ShowDemoControls();
-}
+ }
 
 void AkID_UnrealGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
