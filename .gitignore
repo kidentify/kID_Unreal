@@ -1,6 +1,7 @@
+apikey.txt
+
 # Visual Studio 2015 user specific files
 .vs/
-
 *.rsp
 
 # Compiled Object files

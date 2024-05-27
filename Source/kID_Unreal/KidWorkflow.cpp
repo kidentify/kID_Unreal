@@ -25,7 +25,6 @@
 const int32 ConsentTimeoutSeconds = 300;
 const int32 ConsentPollingInterval = 1;
 const FString BaseUrl = TEXT("https://game-api.k-id.com/api/v1");
-const FString ApiKey = TEXT("REPLACEMENT_TEXT");
 const FString ClientId = TEXT("12345678-1234-1234-1234-123456789012");
 
 bool UKidWorkflow::bShutdown = false;
@@ -34,6 +33,13 @@ void UKidWorkflow::Initialize()
 {
     bShutdown = false;
 
+    FString ApiKey;
+    if (!FFileHelper::LoadFileToString(ApiKey, *(FPaths::ProjectDir() + TEXT("/apikey.txt"))))
+    {
+        UE_LOG(LogTemp, Error, TEXT("Failed to load API key from apikey.txt.  Create a file with your API key in the project root directory."));
+        return;
+    }
+    
     FString payload = TEXT("{ \"clientId\": \"") + ClientId + TEXT("\"}");
 
     HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/auth/issue-token"), payload, ApiKey, [this](FHttpResponsePtr Response, bool bWasSuccessful)
@@ -109,6 +115,7 @@ void UKidWorkflow::StartKidSession(const FString& Location)
             }
         }))
         {
+            UE_LOG(LogTemp, Log, TEXT("No age gate needed for location %s"), *Location);
             GetDefaultPermissions(Location);
         }
     }
@@ -564,11 +571,18 @@ void UKidWorkflow::UpdateHUDText()
 {
     if (PlayerHUDWidget)
     {
-        FString AgeStatus = SessionInfo.IsValid() ? SessionInfo->GetStringField(TEXT("ageStatus")) : TEXT("N/A");
-        FString SessionId = SessionInfo.IsValid() && SessionInfo->HasField(TEXT("sessionId")) ? SessionInfo->GetStringField(TEXT("sessionId")) : TEXT("N/A");
-        FString ChallengeId;
-        FString HUDText = FString::Printf(TEXT("ageStatus: %s sessionId: %s challengeId %s"), *AgeStatus, *SessionId, LoadChallengeId(ChallengeId) ? *ChallengeId : TEXT("N/A"));
-        PlayerHUDWidget->SetText(HUDText);
+        if (!AuthToken.IsEmpty())
+        {
+            FString AgeStatus = SessionInfo.IsValid() ? SessionInfo->GetStringField(TEXT("ageStatus")) : TEXT("N/A");
+            FString SessionId = SessionInfo.IsValid() && SessionInfo->HasField(TEXT("sessionId")) ? SessionInfo->GetStringField(TEXT("sessionId")) : TEXT("N/A");
+            FString ChallengeId;
+            FString HUDText = FString::Printf(TEXT("ageStatus: %s sessionId: %s challengeId %s"), *AgeStatus, *SessionId, LoadChallengeId(ChallengeId) ? *ChallengeId : TEXT("N/A"));
+            PlayerHUDWidget->SetText(HUDText);
+        } 
+        else    
+        {
+            PlayerHUDWidget->SetText(TEXT("AuthToken not initialized. Check log for details."));
+        }
     }
 }
 

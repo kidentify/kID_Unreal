@@ -23,15 +23,13 @@ void AkID_UnrealGameMode::BeginPlay()
     KidWorkflow->Initialize();
 
     UE_LOG(LogTemp, Log, TEXT("Showing demo controls..."));
-
-    // Get the game instance and call the method to create the widget
-    KidWorkflow->ShowDemoControls();
     KidWorkflow->ShowPlayerHUD();
+    KidWorkflow->ShowDemoControls();
 }
 
 void AkID_UnrealGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    UE_LOG(LogTemp, Warning, TEXT("AMyProject3GameMode::EndPlay..."));
+    UE_LOG(LogTemp, Log, TEXT("Cleaning up kID workflow..."));
     KidWorkflow->CleanUp();
 	Super::EndPlay(EndPlayReason);
 }
