@@ -296,7 +296,10 @@ void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeou
 
 void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, TFunction<void(bool)> OnConsentGranted)
 {
-    FString Url = BaseUrl + TEXT("/challenge/await?challengeId=") + ChallengeId + TEXT("&timeout=0");
+    // timeout
+    const int challengeAwaitTimeout = 1;
+
+    FString Url = BaseUrl + TEXT("/challenge/await?challengeId=") + ChallengeId + TEXT("&timeout=") + FString::FromInt(challengeAwaitTimeout);
 
     HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this, ChallengeId, StartTime, Timeout, OnConsentGranted](FHttpResponsePtr Response, bool bWasSuccessful)
     {
