@@ -7,7 +7,9 @@ This demo uses the First Person Template from Unreal 5, and was built using Unre
 ## Installation
 - Clone the repo locally
 - Open the file kID_Unreal.uproject in Unreal 5.4.1
-- Create a file called apikey.txt in the project root directory with your k-ID API key from your Product
+- Install Visual Studio Code and add C++ Plugins
+- From the Tools menu in Unreal, select Refresh Visual Studio Code Project, then select Open Visual Studio code
+- Create a file called apikey.txt in the project root directory with your k-ID API key from your k-ID Product
 - Click the Play button in Unreal to enter Play In Editor mode
 
 ## Dependencies
