@@ -42,7 +42,8 @@ void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
         Callback(false);
         return;
     }
-    
+    ApiKey.TrimEndInline();
+
     // do this up front so that the HUD shows the session before interacting with the kID demo controls
     GetSavedSessionInfo();
 
