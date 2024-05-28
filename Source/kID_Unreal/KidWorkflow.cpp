@@ -20,7 +20,7 @@
 #include "PlayerHUDWidget.h"
 #include "FloatingChallengeWidget.h"
 #include "DemoControlsWidget.h"
-// vscode bug workaround
+// vscode intellisense issue workaround
 #include <initializer_list> 
 
 // Constants
@@ -265,7 +265,9 @@ void UKidWorkflow::ValidateAge(TFunction<void(bool)> Callback)
 
 void UKidWorkflow::GetDefaultPermissions(const FString& Location)
 {
+    // use a default date of birth for age gate that would be considered a legal adult
     FString dob = TEXT("1970");
+
     FString Url = FString::Printf(TEXT("%s/age-gate/get-default-permissions?jurisdiction=%s&dateOfBirth=%s"), *BaseUrl, *Location, *dob);
     HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this](FHttpResponsePtr Response, bool bWasSuccessful)
     {
