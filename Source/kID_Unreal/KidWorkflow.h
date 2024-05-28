@@ -27,9 +27,11 @@ public:
     void ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, const FString& QRCodeUrl, TFunction<void(bool)> OnConsentGranted);
     void GetSessionPermissions(const FString& SessionId, const FString& ETag);
     void HandleProhibitedStatus();
+    void CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, TFunction<void(bool)> OnConsentGranted);
+
+    // feature management - roadmap
     void AttemptTurnOnFeature(const FString& FeatureName, TFunction<void()> EnableFeature);
     void GenerateFeatureChallenge(FString& OutChallengeId, FString& OutQRCodeUrl, FString& OutOTP);
-    void CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, TFunction<void(bool)> OnConsentGranted);
 
     // managing session local storage
     void SaveSessionInfo();

@@ -20,6 +20,8 @@
 #include "PlayerHUDWidget.h"
 #include "FloatingChallengeWidget.h"
 #include "DemoControlsWidget.h"
+// vscode bug workaround
+#include <initializer_list> 
 
 // Constants
 const int32 ConsentTimeoutSeconds = 300;
@@ -30,7 +32,7 @@ const FString ClientId = TEXT("12345678-1234-1234-1234-123456789012");
 bool UKidWorkflow::bShutdown = false;
 
 void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
-{
+{ 
     bShutdown = false;
 
     FString ApiKey;
@@ -54,17 +56,6 @@ void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
             {
                 AuthToken = JsonResponse->GetStringField(TEXT("accessToken"));
                 UE_LOG(LogTemp, Log, TEXT("AuthToken generated: %s"), *AuthToken);
-            }
-        }
-        else
-        {
-            if (Response.IsValid())
-            {
-                UE_LOG(LogTemp, Error, TEXT("Failed to retrieve AuthToken. Response: %s"), *Response->GetContentAsString());
-            }
-            else
-            {
-                UE_LOG(LogTemp, Error, TEXT("Failed to retrieve AuthToken. Response is invalid."));
             }
         }
         Callback(bWasSuccessful);
@@ -389,16 +380,6 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
         }
         else
         {
-            if  (Response.IsValid())
-            {
-                FString LogMessage = FString::Printf(TEXT("Error Result from /challenge/await - %s"), *Response->GetContentAsString());
-                UE_LOG(LogTemp, Error, TEXT("%s"), *LogMessage);
-            }
-            else
-            {
-                FString LogMessage = TEXT("Error Result from /challenge/await - Response is invalid.");
-                UE_LOG(LogTemp, Error, TEXT("%s"), *LogMessage);
-            }
             OnConsentGranted(false);
         }
 
