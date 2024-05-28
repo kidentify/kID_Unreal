@@ -32,7 +32,6 @@ void AkID_UnrealGameMode::BeginPlay()
             UE_LOG(LogTemp, Error, TEXT("kID workflow failed to initialize!"));
         }
         KidWorkflow->ShowPlayerHUD();
-        KidWorkflow->SetTimerManager(GetWorld()->GetTimerManager());
     });
 
  }

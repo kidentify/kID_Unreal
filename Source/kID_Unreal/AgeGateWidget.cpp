@@ -16,6 +16,7 @@ void UAgeGateWidget::InitializeWidget(TFunction<void(const FString&)> InCallback
 
 void UAgeGateWidget::OnSubmitClicked()
 {
-    Callback(DOBTextBox->GetText().ToString());
-    RemoveFromParent();  
+    FString DOB = DOBTextBox->GetText().ToString();
+    RemoveFromParent();
+    Callback(DOB);
 } 

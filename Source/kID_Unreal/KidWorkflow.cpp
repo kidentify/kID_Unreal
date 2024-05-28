@@ -58,10 +58,19 @@ void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
         }
         else
         {
-            UE_LOG(LogTemp, Error, TEXT("Failed to retrieve AuthToken. Response: %s"), *Response->GetContentAsString());
+            if (Response.IsValid())
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to retrieve AuthToken. Response: %s"), *Response->GetContentAsString());
+            }
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("Failed to retrieve AuthToken. Response is invalid."));
+            }
         }
         Callback(bWasSuccessful);
     });
+
+    GetSavedSessionInfo();
 }
 
 void UKidWorkflow::StartKidSession(const FString& Location)
@@ -81,10 +90,11 @@ void UKidWorkflow::StartKidSession(const FString& Location)
 
     if (GetSavedSessionInfo())
     {
+        UE_LOG(LogTemp, Log, TEXT("Saved Session found."));
         if (SessionInfo->HasField(TEXT("sessionId")))
         {
             FString SessionId = SessionInfo->GetStringField(TEXT("sessionId"));
-            UE_LOG(LogTemp, Warning, TEXT("Refreshing session."));
+            UE_LOG(LogTemp, Log, TEXT("Refreshing session."));
             FString ETag = SessionInfo->GetStringField(TEXT("etag"));
             GetSessionPermissions(SessionId, ETag);
         }
@@ -300,17 +310,18 @@ void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeou
 
         HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/challenge/send-email"), ContentJsonString, AuthToken, [](FHttpResponsePtr Response, bool bWasSuccessful)
         {
-            UE_LOG(LogTemp, Log, TEXT("/challenge/send-email succeeded with %s"), *Response->GetContentAsString());
+            if (bWasSuccessful && Response.IsValid())
+            {       
+                UE_LOG(LogTemp, Log, TEXT("/challenge/send-email succeeded with %s"), *Response->GetContentAsString());
+            }   
+            else
+            {
+                UE_LOG(LogTemp, Error, TEXT("/challenge/send-email failed"));
+            }
         });
     });
 
     CheckForConsent(ChallengeId, StartTime, Timeout, OnConsentGranted);
-}
-
-void AppendLogToFile(const FString& LogMessage)
-{
-    FString LogFilePath = FPaths::ProjectDir() + TEXT("log.txt");
-    FFileHelper::SaveStringToFile(LogMessage + LINE_TERMINATOR, *LogFilePath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), EFileWrite::FILEWRITE_Append);
 }
 
 void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, TFunction<void(bool)> OnConsentGranted)
@@ -320,15 +331,12 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
 
     FString Url = FString::Printf(TEXT("%s/challenge/await?challengeId=%s&timeout=%d"), *BaseUrl, *ChallengeId, challengeAwaitTimeout);
 
-    AppendLogToFile(TEXT("Calling http call to /challenge/await..."));
-
     HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this, ChallengeId, StartTime, Timeout, OnConsentGranted](FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bShutdown)
         {
             FString LogMessage = TEXT("CheckForConsent was called after the game instance has been shut down.");
-            UE_LOG(LogTemp, Error, TEXT("%s"), *LogMessage);
-            AppendLogToFile(LogMessage);
+            UE_LOG(LogTemp, Warning, TEXT("%s"), *LogMessage);
             return;
         }
 
@@ -336,7 +344,6 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
         {
             FString LogMessage = TEXT("Challenge ID was cleared while waiting for consent.");
             UE_LOG(LogTemp, Warning, TEXT("%s"), *LogMessage);
-            AppendLogToFile(LogMessage);
             return;
         }
 
@@ -346,59 +353,55 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
         {
             FString LogMessage = FString::Printf(TEXT("/challenge/await succeeded with %s"), *Response->GetContentAsString());
             UE_LOG(LogTemp, Log, TEXT("%s"), *LogMessage);
-            AppendLogToFile(LogMessage);
 
             TSharedPtr<FJsonObject> JsonResponse;
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-            AppendLogToFile(TEXT("Here 1"));
             if (FJsonSerializer::Deserialize(Reader, JsonResponse))
             {
-                AppendLogToFile(TEXT("Here 2"));
                 FString Status = JsonResponse->GetStringField(TEXT("status"));
 
                 if (Status == TEXT("PASS"))
                 {
-                    AppendLogToFile(TEXT("Here 3"));
                     OnConsentGranted(true);
-                    AppendLogToFile(TEXT("Here 3.5"));
                     return;
                 }
                 else if (Status == TEXT("FAIL"))
                 {
-                    AppendLogToFile(TEXT("Here 4"));
                     OnConsentGranted(false);
-                    AppendLogToFile(TEXT("Here 4.5"));
                     return;
                 }
+            }
+
+            FDateTime CurrentTime = FDateTime::UtcNow();
+            FTimespan ElapsedTime = CurrentTime - StartTime;
+
+            if (ElapsedTime.GetTotalSeconds() < Timeout)
+            {
+                GetWorld()->GetTimerManager().SetTimer(ConsentPollingTimerHandle, [this, ChallengeId, StartTime, Timeout, OnConsentGranted]()
+                {
+                    CheckForConsent(ChallengeId, StartTime, Timeout, OnConsentGranted);
+                }, ConsentPollingInterval, false);
+            }
+            else
+            {
+                OnConsentGranted(false);
             }
         }
         else
         {
-            FString LogMessage = FString::Printf(TEXT("Error Result from /challenge/await - %s"), *Response->GetContentAsString());
-            UE_LOG(LogTemp, Error, TEXT("%s"), *LogMessage);
-            AppendLogToFile(LogMessage);
-        }
-
-        FDateTime CurrentTime = FDateTime::UtcNow();
-        FTimespan ElapsedTime = CurrentTime - StartTime;
-
-        AppendLogToFile(TEXT("Checking elapsed time..."));
-        if (ElapsedTime.GetTotalSeconds() < Timeout)
-        {
-            AppendLogToFile(TEXT("Now inside elapsed time..."));
-            TimerManager->SetTimer(ConsentPollingTimerHandle, [this, ChallengeId, StartTime, Timeout, OnConsentGranted]()
+            if  (Response.IsValid())
             {
-                AppendLogToFile(TEXT("Starting timer callback..."));
-                CheckForConsent(ChallengeId, StartTime, Timeout, OnConsentGranted);
-                AppendLogToFile(TEXT("Finished CheckForConsent..."));
-            }, ConsentPollingInterval, false);
-        }
-        else
-        {
-            AppendLogToFile(TEXT("Granting no consent..."));
+                FString LogMessage = FString::Printf(TEXT("Error Result from /challenge/await - %s"), *Response->GetContentAsString());
+                UE_LOG(LogTemp, Error, TEXT("%s"), *LogMessage);
+            }
+            else
+            {
+                FString LogMessage = TEXT("Error Result from /challenge/await - Response is invalid.");
+                UE_LOG(LogTemp, Error, TEXT("%s"), *LogMessage);
+            }
             OnConsentGranted(false);
-            AppendLogToFile(TEXT("Finished granting no consent..."));
         }
+
     });
 }
 
@@ -408,20 +411,24 @@ void UKidWorkflow::GetSessionPermissions(const FString& SessionId, const FString
 
     HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this](FHttpResponsePtr Response, bool bWasSuccessful)
     {
-        if (Response->GetResponseCode() == 304)
+        if (bWasSuccessful && Response.IsValid())
         {
-            UE_LOG(LogTemp, Log, TEXT("Session information is up-to-date."));
-            return;
-        }
+            if (Response->GetResponseCode() == 304)
+            {
+                UE_LOG(LogTemp, Log, TEXT("Session information is up-to-date."));
+                return;
+            }
 
-        if (bWasSuccessful)
-        {
             UE_LOG(LogTemp, Log, TEXT("/session/get succeeded with %s"), *Response->GetContentAsString());
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, SessionInfo))
             {
                 SaveSessionInfo();
             }
+        }   
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("/session/get failed"));
         }
     });
 }
@@ -594,9 +601,18 @@ bool UKidWorkflow::GetSavedSessionInfo()
         TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(SessionInfoString);
         if (FJsonSerializer::Deserialize(Reader, SessionInfo))
         {
+            UE_LOG(LogTemp, Log, TEXT("Found saved session."));
             UpdateHUDText();
             return true;
         }
+        else
+        {
+            UE_LOG(LogTemp, Error, TEXT("Failed to deserialize saved session."));     
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Log, TEXT("No saved session found."));
     }
     return false;
 }
@@ -702,7 +718,7 @@ void UKidWorkflow::ShowUnavailableWidget()
         UClass* UnavailableWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/BP_UnavailableWidget.BP_UnavailableWidget_C"));
         if (UnavailableWidgetClass)
         {
-            UnavailableWidget = CreateWidget<UUnavailableWidget>(GEngine->GameViewport->GetWorld(), UnavailableWidgetClass);
+            UUnavailableWidget* UnavailableWidget = CreateWidget<UUnavailableWidget>(GEngine->GameViewport->GetWorld(), UnavailableWidgetClass);
             if (UnavailableWidget)
             {
                 UnavailableWidget->AddToViewport();
@@ -731,26 +747,6 @@ void UKidWorkflow::CleanUp()
     UE_LOG(LogTemp, Log, TEXT("Cleaning up."));
     if (ConsentPollingTimerHandle.IsValid())
     {
-        TimerManager->ClearTimer(ConsentPollingTimerHandle);
-    }
-    if (FloatingChallengeWidget)
-    {
-        FloatingChallengeWidget->RemoveFromParent();
-        FloatingChallengeWidget = nullptr;
-    }
-    if (AgeGateWidget)
-    {
-        AgeGateWidget->RemoveFromParent();
-        AgeGateWidget = nullptr;
-    }
-    if(PlayerHUDWidget)
-    {
-        PlayerHUDWidget->RemoveFromParent();
-        PlayerHUDWidget = nullptr;
-    }
-    if(UnavailableWidget)
-    {
-        UnavailableWidget->RemoveFromParent();
-        UnavailableWidget = nullptr;
+        GetWorld()->GetTimerManager().ClearTimer(ConsentPollingTimerHandle);
     }
 }

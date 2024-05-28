@@ -56,7 +56,6 @@ public:
     void AttemptTurnOnChat();
     void EnableChat();
      
-    void SetTimerManager(FTimerManager& InTimerManager) { TimerManager = &InTimerManager; }
 private:
     static bool bShutdown;
 
@@ -64,9 +63,12 @@ private:
     TSharedPtr<FJsonObject> SessionInfo;
     FString AuthToken;
 
-    UPlayerHUDWidget* PlayerHUDWidget;
-    UFloatingChallengeWidget* FloatingChallengeWidget;
+    UPROPERTY()
     UAgeGateWidget* AgeGateWidget;
-    UUnavailableWidget* UnavailableWidget;
-    FTimerManager* TimerManager;
+
+    UPROPERTY()
+    UPlayerHUDWidget* PlayerHUDWidget;
+
+    UPROPERTY()
+    UFloatingChallengeWidget* FloatingChallengeWidget;
 };
