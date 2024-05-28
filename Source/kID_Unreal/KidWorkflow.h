@@ -56,6 +56,7 @@ public:
     void AttemptTurnOnChat();
     void EnableChat();
      
+    void SetTimerManager(FTimerManager& InTimerManager) { TimerManager = &InTimerManager; }
 private:
     static bool bShutdown;
 
@@ -67,4 +68,5 @@ private:
     UFloatingChallengeWidget* FloatingChallengeWidget;
     UAgeGateWidget* AgeGateWidget;
     UUnavailableWidget* UnavailableWidget;
+    FTimerManager* TimerManager;
 };

@@ -25,14 +25,14 @@ void AkID_UnrealGameMode::BeginPlay()
         if (bSuccess)
         {
             UE_LOG(LogTemp, Log, TEXT("kID workflow initialized successfully!"));
-            KidWorkflow->ShowPlayerHUD();
             KidWorkflow->ShowDemoControls();
         }
         else
         {
             UE_LOG(LogTemp, Error, TEXT("kID workflow failed to initialize!"));
-            KidWorkflow->ShowPlayerHUD();
         }
+        KidWorkflow->ShowPlayerHUD();
+        KidWorkflow->SetTimerManager(GetWorld()->GetTimerManager());
     });
 
  }

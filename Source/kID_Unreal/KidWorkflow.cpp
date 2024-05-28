@@ -307,24 +307,36 @@ void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeou
     CheckForConsent(ChallengeId, StartTime, Timeout, OnConsentGranted);
 }
 
+void AppendLogToFile(const FString& LogMessage)
+{
+    FString LogFilePath = FPaths::ProjectDir() + TEXT("log.txt");
+    FFileHelper::SaveStringToFile(LogMessage + LINE_TERMINATOR, *LogFilePath, FFileHelper::EEncodingOptions::AutoDetect, &IFileManager::Get(), EFileWrite::FILEWRITE_Append);
+}
+
 void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, TFunction<void(bool)> OnConsentGranted)
 {
-    // timeout
-    const int challengeAwaitTimeout = 1;
+    // http timeout
+    int challengeAwaitTimeout = 1;
 
-    FString Url = BaseUrl + TEXT("/challenge/await?challengeId=") + ChallengeId + TEXT("&timeout=") + FString::FromInt(challengeAwaitTimeout);
+    FString Url = FString::Printf(TEXT("%s/challenge/await?challengeId=%s&timeout=%d"), *BaseUrl, *ChallengeId, challengeAwaitTimeout);
+
+    AppendLogToFile(TEXT("Calling http call to /challenge/await..."));
 
     HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this, ChallengeId, StartTime, Timeout, OnConsentGranted](FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bShutdown)
         {
-            UE_LOG(LogTemp, Error, TEXT("CheckForConsent was called after the game instance has been shut down."));
+            FString LogMessage = TEXT("CheckForConsent was called after the game instance has been shut down.");
+            UE_LOG(LogTemp, Error, TEXT("%s"), *LogMessage);
+            AppendLogToFile(LogMessage);
             return;
         }
 
         if (!HasChallengeId())
         {
-            UE_LOG(LogTemp, Warning, TEXT("Challenge ID was cleared while waiting for consent."));
+            FString LogMessage = TEXT("Challenge ID was cleared while waiting for consent.");
+            UE_LOG(LogTemp, Warning, TEXT("%s"), *LogMessage);
+            AppendLogToFile(LogMessage);
             return;
         }
 
@@ -332,44 +344,60 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
 
         if (bWasSuccessful && Response.IsValid())
         {
-            UE_LOG(LogTemp, Log, TEXT("/challenge/await succeeded with %s"), *Response->GetContentAsString());
+            FString LogMessage = FString::Printf(TEXT("/challenge/await succeeded with %s"), *Response->GetContentAsString());
+            UE_LOG(LogTemp, Log, TEXT("%s"), *LogMessage);
+            AppendLogToFile(LogMessage);
 
             TSharedPtr<FJsonObject> JsonResponse;
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+            AppendLogToFile(TEXT("Here 1"));
             if (FJsonSerializer::Deserialize(Reader, JsonResponse))
             {
+                AppendLogToFile(TEXT("Here 2"));
                 FString Status = JsonResponse->GetStringField(TEXT("status"));
 
                 if (Status == TEXT("PASS"))
                 {
+                    AppendLogToFile(TEXT("Here 3"));
                     OnConsentGranted(true);
+                    AppendLogToFile(TEXT("Here 3.5"));
                     return;
                 }
                 else if (Status == TEXT("FAIL"))
                 {
+                    AppendLogToFile(TEXT("Here 4"));
                     OnConsentGranted(false);
+                    AppendLogToFile(TEXT("Here 4.5"));
                     return;
                 }
             }
         }
         else
         {
-            UE_LOG(LogTemp, Error, TEXT("Error Result from /challenge/await - %s"), *Response->GetContentAsString());
+            FString LogMessage = FString::Printf(TEXT("Error Result from /challenge/await - %s"), *Response->GetContentAsString());
+            UE_LOG(LogTemp, Error, TEXT("%s"), *LogMessage);
+            AppendLogToFile(LogMessage);
         }
 
         FDateTime CurrentTime = FDateTime::UtcNow();
         FTimespan ElapsedTime = CurrentTime - StartTime;
 
+        AppendLogToFile(TEXT("Checking elapsed time..."));
         if (ElapsedTime.GetTotalSeconds() < Timeout)
         {
-            GetWorld()->GetTimerManager().SetTimer(ConsentPollingTimerHandle, [this, ChallengeId, StartTime, Timeout, OnConsentGranted]()
+            AppendLogToFile(TEXT("Now inside elapsed time..."));
+            TimerManager->SetTimer(ConsentPollingTimerHandle, [this, ChallengeId, StartTime, Timeout, OnConsentGranted]()
             {
+                AppendLogToFile(TEXT("Starting timer callback..."));
                 CheckForConsent(ChallengeId, StartTime, Timeout, OnConsentGranted);
+                AppendLogToFile(TEXT("Finished CheckForConsent..."));
             }, ConsentPollingInterval, false);
         }
         else
         {
+            AppendLogToFile(TEXT("Granting no consent..."));
             OnConsentGranted(false);
+            AppendLogToFile(TEXT("Finished granting no consent..."));
         }
     });
 }
@@ -701,9 +729,9 @@ void UKidWorkflow::CleanUp()
 {
     bShutdown = true;
     UE_LOG(LogTemp, Log, TEXT("Cleaning up."));
-    if (ConsentPollingTimerHandle.IsValid() && GetWorld())
+    if (ConsentPollingTimerHandle.IsValid())
     {
-        GetWorld()->GetTimerManager().ClearTimer(ConsentPollingTimerHandle);
+        TimerManager->ClearTimer(ConsentPollingTimerHandle);
     }
     if (FloatingChallengeWidget)
     {
