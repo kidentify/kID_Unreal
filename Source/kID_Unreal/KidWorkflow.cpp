@@ -43,6 +43,9 @@ void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
         return;
     }
     
+    // do this up front so that the HUD shows the session before interacting with the kID demo controls
+    GetSavedSessionInfo();
+
     FString payload = TEXT("{ \"clientId\": \"") + ClientId + TEXT("\"}");
 
     HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/auth/issue-token"), payload, ApiKey, 
@@ -61,7 +64,6 @@ void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
         Callback(bWasSuccessful);
     });
 
-    GetSavedSessionInfo();
 }
 
 void UKidWorkflow::StartKidSession(const FString& Location)
@@ -445,8 +447,37 @@ void UKidWorkflow::AttemptTurnOnFeature(const FString& FeatureName, TFunction<vo
         }
         else if (ManagedBy == TEXT("GUARDIAN"))
         {
+            ShowFeatureConsentChallenge(EnableFeature);
+
+        }
+        else if (ManagedBy == TEXT("PROHIBITED"))
+        {
+            UE_LOG(LogTemp, Warning, TEXT("Feature %s is prohibited for this player."), *FeatureName);
+        }
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("Feature %s not found."), *FeatureName);
+    }
+}
+
+void UKidWorkflow::ShowFeatureConsentChallenge(TFunction<void()> EnableFeature)
+{
+    HttpRequestHelper::GetRequestWithAuth(BaseUrl + TEXT("/session/upgrade"), AuthToken, 
+                        [this, EnableFeature](FHttpResponsePtr Response, bool bWasSuccessful)
+    {
+        if (bWasSuccessful && Response.IsValid())
+        {
             FString ChallengeId, QRCodeUrl, OTP;
-            GenerateFeatureChallenge(ChallengeId, QRCodeUrl, OTP);
+            UE_LOG(LogTemp, Log, TEXT("/session/upgrade succeeded with %s"), *Response->GetContentAsString());
+            TSharedPtr<FJsonObject> JsonResponse;
+            TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
+            if (FJsonSerializer::Deserialize(Reader, JsonResponse))
+            {
+                ChallengeId = JsonResponse->GetStringField(TEXT("challengeId"));
+                QRCodeUrl = JsonResponse->GetStringField(TEXT("url"));
+                OTP = JsonResponse->GetStringField(TEXT("oneTimePassword"));
+            }
 
             ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OTP, QRCodeUrl, [this, EnableFeature](bool bConsentGranted)
             {
@@ -462,33 +493,6 @@ void UKidWorkflow::AttemptTurnOnFeature(const FString& FeatureName, TFunction<vo
                     UE_LOG(LogTemp, Warning, TEXT("Consent for feature was denied."));
                 }
             });
-        }
-        else if (ManagedBy == TEXT("PROHIBITED"))
-        {
-            UE_LOG(LogTemp, Warning, TEXT("Feature %s is prohibited for this player."), *FeatureName);
-        }
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("Feature %s not found."), *FeatureName);
-    }
-}
-
-void UKidWorkflow::GenerateFeatureChallenge(FString& OutChallengeId, FString& OutQRCodeUrl, FString& OutOTP)
-{
-    HttpRequestHelper::GetRequestWithAuth(BaseUrl + TEXT("/feature/challenge/generate"), AuthToken, [this, &OutChallengeId, &OutQRCodeUrl, &OutOTP](FHttpResponsePtr Response, bool bWasSuccessful)
-    {
-        if (bWasSuccessful && Response.IsValid())
-        {
-            UE_LOG(LogTemp, Log, TEXT("/feature/challenge/generate succeeded with %s"), *Response->GetContentAsString());
-            TSharedPtr<FJsonObject> JsonResponse;
-            TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
-            if (FJsonSerializer::Deserialize(Reader, JsonResponse))
-            {
-                OutChallengeId = JsonResponse->GetStringField(TEXT("challengeId"));
-                OutQRCodeUrl = JsonResponse->GetStringField(TEXT("url"));
-                OutOTP = JsonResponse->GetStringField(TEXT("oneTimePassword"));
-            }
         }
     });
 }

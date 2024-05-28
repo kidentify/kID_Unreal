@@ -31,7 +31,7 @@ public:
 
     // feature management - roadmap
     void AttemptTurnOnFeature(const FString& FeatureName, TFunction<void()> EnableFeature);
-    void GenerateFeatureChallenge(FString& OutChallengeId, FString& OutQRCodeUrl, FString& OutOTP);
+    void ShowFeatureConsentChallenge(TFunction<void()> OnConsentGranted);
 
     // managing session local storage
     void SaveSessionInfo();
