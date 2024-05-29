@@ -40,5 +40,5 @@ void AkID_UnrealGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     UE_LOG(LogTemp, Log, TEXT("Cleaning up kID workflow..."));
     KidWorkflow->CleanUp();
-	Super::EndPlay(EndPlayReason);
+    Super::EndPlay(EndPlayReason);
 }

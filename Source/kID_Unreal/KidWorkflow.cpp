@@ -20,8 +20,6 @@
 #include "PlayerHUDWidget.h"
 #include "FloatingChallengeWidget.h"
 #include "DemoControlsWidget.h"
-// vscode intellisense issue workaround
-#include <initializer_list> 
 
 // Constants
 const int32 ConsentTimeoutSeconds = 300;
