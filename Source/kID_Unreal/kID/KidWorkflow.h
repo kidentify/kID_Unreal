@@ -24,13 +24,15 @@ public:
     void GetUserAge(const FString& Location, TFunction<void(bool, bool, const FString&)> Callback);
     void ValidateAge(TFunction<void(bool)> Callback);
     void GetDefaultPermissions(const FString& Location);
-    void ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, const FString& QRCodeUrl, TFunction<void(bool)> OnConsentGranted);
+    void ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, const FString& QRCodeUrl, 
+                            TFunction<void(bool, const FString&)> OnConsentGranted);
     void GetSessionPermissions(const FString& SessionId, const FString& ETag);
     void HandleProhibitedStatus();
-    void CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, TFunction<void(bool)> OnConsentGranted);
+    void CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, 
+                            TFunction<void(bool, const FString&)> OnConsentGranted);
 
     // feature management - roadmap
-    void AttemptTurnOnFeature(const FString& FeatureName, TFunction<void()> EnableFeature);
+    void AttemptTurnOnRestrictedFeature(const FString& FeatureName, TFunction<void()> EnableFeature);
     void ShowFeatureConsentChallenge(TFunction<void()> OnConsentGranted);
 
     // managing session local storage

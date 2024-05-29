@@ -140,10 +140,12 @@ void UKidWorkflow::HandleExistingChallenge(const FString& ChallengeId)
                 FString OneTimePassword = JsonResponse->GetStringField(TEXT("oneTimePassword"));
                 FString QRCodeUrl = JsonResponse->GetStringField(TEXT("url"));
 
-                ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OneTimePassword, QRCodeUrl, [this](bool bConsentGranted)
+                ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OneTimePassword, QRCodeUrl, [this](bool bConsentGranted, 
+                        const FString &SessionId)
                 {
                     if (bConsentGranted)
                     {
+                        GetSessionPermissions(SessionId, TEXT(""));
                         ClearChallengeId();
                     }
                     else
@@ -176,7 +178,6 @@ void UKidWorkflow::StartKidSessionWithDOB(const FString& Location, const FString
     {
         if (bWasSuccessful)
         {
-            UE_LOG(LogTemp, Log, TEXT("Call to /age-gate/check succeeded: %s"), *Response->GetContentAsString());
             TSharedPtr<FJsonObject> JsonResponse;
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, JsonResponse))
@@ -190,10 +191,12 @@ void UKidWorkflow::StartKidSessionWithDOB(const FString& Location, const FString
                     FString QRCodeUrl = Challenge->GetStringField(TEXT("url"));
                     SaveChallengeId(ChallengeId);
 
-                    ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OneTimePassword, QRCodeUrl, [this](bool bConsentGranted)
+                    ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OneTimePassword, QRCodeUrl, [this](bool bConsentGranted,
+                            const FString &SessionId)
                     {
                         if (bConsentGranted)
                         {
+                            GetSessionPermissions(SessionId, TEXT(""));
                             ClearChallengeId();
                         }
                         else
@@ -256,7 +259,8 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
 void UKidWorkflow::ValidateAge(TFunction<void(bool)> Callback)
 {
     UE_LOG(LogTemp, Log, TEXT("Validating age..."));
-    bool bValidated = true; // Replace with actual age validation logic
+    // Integrate age assurance in your game here
+    bool bValidated = true;  
     Callback(bValidated);
 }
 
@@ -284,7 +288,8 @@ void UKidWorkflow::GetDefaultPermissions(const FString& Location)
     });
 }
 
-void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, const FString& QRCodeUrl, TFunction<void(bool)> OnConsentGranted)
+void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, 
+                const FString& QRCodeUrl, TFunction<void(bool, const FString&)> OnConsentGranted)
 {
     FDateTime StartTime = FDateTime::UtcNow();
 
@@ -314,14 +319,22 @@ void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeou
     CheckForConsent(ChallengeId, StartTime, Timeout, OnConsentGranted);
 }
 
-void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, TFunction<void(bool)> OnConsentGranted)
+void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, 
+                        TFunction<void(bool, const FString &)> OnConsentGranted)
 {
-    // http timeout
-    int challengeAwaitTimeout = 1;
+    // *kID challenge/await timeout parameter*
+    // This value could be assigned the value of Timeout if you want to simply wait 
+    // for the long poll to return and reduce the number of retries.  
+    // It is set to 1 second for demo purposes as entering Play In Editor mode in 
+    // Unreal will leave the long poll hanging after quitting the game.
+    const int challengeAwaitTimeout = 1;
 
-    FString Url = FString::Printf(TEXT("%s/challenge/await?challengeId=%s&timeout=%d"), *BaseUrl, *ChallengeId, challengeAwaitTimeout);
+    FString Url = FString::Printf(TEXT("%s/challenge/await?challengeId=%s&timeout=%d"), 
+                *BaseUrl, *ChallengeId, challengeAwaitTimeout);
 
-    HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this, ChallengeId, StartTime, Timeout, OnConsentGranted](FHttpResponsePtr Response, bool bWasSuccessful)
+    HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, 
+            [this, ChallengeId, StartTime, Timeout, OnConsentGranted]
+            (FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bShutdown)
         {
@@ -341,9 +354,6 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
 
         if (bWasSuccessful && Response.IsValid())
         {
-            FString LogMessage = FString::Printf(TEXT("/challenge/await succeeded with %s"), *Response->GetContentAsString());
-            UE_LOG(LogTemp, Log, TEXT("%s"), *LogMessage);
-
             TSharedPtr<FJsonObject> JsonResponse;
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, JsonResponse))
@@ -352,12 +362,13 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
 
                 if (Status == TEXT("PASS"))
                 {
-                    OnConsentGranted(true);
+                    FString SessionId = JsonResponse->GetStringField(TEXT("sessionId"));
+                    OnConsentGranted(true, SessionId);
                     return;
                 }
                 else if (Status == TEXT("FAIL"))
                 {
-                    OnConsentGranted(false);
+                    OnConsentGranted(false, TEXT(""));
                     return;
                 }
             }
@@ -365,6 +376,7 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
             FDateTime CurrentTime = FDateTime::UtcNow();
             FTimespan ElapsedTime = CurrentTime - StartTime;
 
+            // Retry if the elapsed time is less than the overall timeout
             if (ElapsedTime.GetTotalSeconds() < Timeout)
             {
                 GetWorld()->GetTimerManager().SetTimer(ConsentPollingTimerHandle, [this, ChallengeId, StartTime, Timeout, OnConsentGranted]()
@@ -374,12 +386,12 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
             }
             else
             {
-                OnConsentGranted(false);
+                OnConsentGranted(false, TEXT(""));
             }
         }
         else
         {
-            OnConsentGranted(false);
+            OnConsentGranted(false, TEXT(""));
         }
 
     });
@@ -399,7 +411,6 @@ void UKidWorkflow::GetSessionPermissions(const FString& SessionId, const FString
                 return;
             }
 
-            UE_LOG(LogTemp, Log, TEXT("/session/get succeeded with %s"), *Response->GetContentAsString());
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, SessionInfo))
             {
@@ -413,7 +424,7 @@ void UKidWorkflow::GetSessionPermissions(const FString& SessionId, const FString
     });
 }
 
-void UKidWorkflow::AttemptTurnOnFeature(const FString& FeatureName, TFunction<void()> EnableFeature)
+void UKidWorkflow::AttemptTurnOnRestrictedFeature(const FString& FeatureName, TFunction<void()> EnableFeature)
 {
     if (AuthToken.IsEmpty())
     {
@@ -474,13 +485,12 @@ void UKidWorkflow::ShowFeatureConsentChallenge(TFunction<void()> EnableFeature)
                 OTP = JsonResponse->GetStringField(TEXT("oneTimePassword"));
             }
 
-            ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OTP, QRCodeUrl, [this, EnableFeature](bool bConsentGranted)
+            ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OTP, QRCodeUrl, [this, EnableFeature]
+                        (bool bConsentGranted, const FString& SessionId)
             {
                 if (bConsentGranted)
                 {
-                    FString SessionId = SessionInfo->GetStringField(TEXT("sessionId"));
-                    FString ETag = SessionInfo->GetStringField(TEXT("etag"));
-                    GetSessionPermissions(SessionId, ETag);
+                    GetSessionPermissions(SessionId, TEXT(""));
                     EnableFeature();
                 }
                 else
@@ -517,6 +527,7 @@ void UKidWorkflow::SaveChallengeId(const FString& InChallengeId)
 void UKidWorkflow::ClearChallengeId()
 {
     IFileManager::Get().Delete(*(FPaths::ProjectSavedDir() + TEXT("/ChallengeId.txt")));
+    DismissChallengeWindow();
     UpdateHUDText();
 }
 
@@ -537,7 +548,7 @@ void UKidWorkflow::EnableChat()
 
 void UKidWorkflow::AttemptTurnOnChat()
 {
-    AttemptTurnOnFeature(TEXT("text-chat-public"), [this]()
+    AttemptTurnOnRestrictedFeature(TEXT("text-chat-public"), [this]()
     {
         EnableChat();
     });
