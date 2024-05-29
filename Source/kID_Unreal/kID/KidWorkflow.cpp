@@ -16,9 +16,6 @@
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "TimerManager.h"
-#include "AgeGateWidget.h"
-#include "PlayerHUDWidget.h"
-#include "FloatingChallengeWidget.h"
 #include "DemoControlsWidget.h"
 
 // Constants

@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "KidWorkflow.h"
+#include "kID/KidWorkflow.h"
 #include "kID_UnrealGameMode.generated.h"
 
 UCLASS(minimalapi)

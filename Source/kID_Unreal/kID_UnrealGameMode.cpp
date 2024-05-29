@@ -1,4 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "kID_UnrealGameMode.h"
 #include "kID_UnrealCharacter.h"
@@ -13,6 +12,7 @@ AkID_UnrealGameMode::AkID_UnrealGameMode()
 
 }
 
+// Integrate kID workflow into the game
 void AkID_UnrealGameMode::BeginPlay()
 {
     Super::BeginPlay();
@@ -33,9 +33,9 @@ void AkID_UnrealGameMode::BeginPlay()
         }
         KidWorkflow->ShowPlayerHUD();
     });
-
  }
 
+// Clean up kID workflow when the game ends - primarily for Unreal PIE sessions
 void AkID_UnrealGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     UE_LOG(LogTemp, Log, TEXT("Cleaning up kID workflow..."));
