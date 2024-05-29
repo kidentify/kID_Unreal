@@ -17,11 +17,11 @@ This demo uses the First Person Template from Unreal 5, and was built using Unre
 Enter a valid location (e.g. US-CA) into the location field, and click Start Session.  If this location requires an age gate, then an age gate is shown.  If the jurisdiction requires parental consent for certain game features at a certain age, and the player is under this age, then a parental consent challenge is shown.  If an email is submitted, then the generated email will contain a link to the kID parent portal.  The QR code will also lead parents to the same portal.  Here you can validate that you are a parent (a Legal Adult), and can grant permission to the child to play the game.  If the player is a legal adult, or consent is granted by the parent, then a new session starts.  From then on, there is an existing session and no further checking will happen even after restarting the game until the Clear Session button is pressed to clear the previous state.
 
 ## Demo structure
-The First Person Unreal sample is unchanged except for integration to k-ID on startup and shutdown in [kID_UnrealGameMode.cpp](Source/kID_Unreal/UnrealGameMode.cpp).  
+The First Person Unreal sample is unchanged except for integration to k-ID on startup and shutdown in [kID_UnrealGameMode.cpp](Source/kID_Unreal/kID_UnrealGameMode.cpp).  
 
 All of the logic for kID flows is in the [KidWorkflow.cpp](Source/kID_Unreal/KidWorkflow.cpp).  
 
-There are 5 widgets implemented with Unreal Blueprints that can be customized.
+There are 5 widgets implemented as Unreal Blueprints that can be customized.  Each is in the [Content/FirstPerson/Blueprints](Content/FirstPerson/Blueprints) directory, and can be edited in the Content Drawer in Unreal.  The supporting classes are:
 - [PlayerHUDWidget.cpp](Source/kID_Unreal/PlayerHUDWidget.cpp): Displays information about the current age status, session id, and challenge id.
 - [DemoControlsWidget.cpp](Source/kID_Unreal/DemoControlsWidget.cpp): Displays the location field and a submit button as well as the Clear Session button.
 - [AgeGateWidget.cpp](Source/kID_Unreal/AgeGateWidget.cpp): Displays the age gate.
