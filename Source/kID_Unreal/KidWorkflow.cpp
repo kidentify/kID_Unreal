@@ -627,7 +627,7 @@ void UKidWorkflow::ShowAgeGate(TFunction<void(const FString&)> Callback)
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/BP_AgeGateWidget.BP_AgeGateWidget_C"));
+        UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_AgeGateWidget.BP_AgeGateWidget_C"));
         if (AgeGateWidgetClass)
         {
             AgeGateWidget = CreateWidget<UAgeGateWidget>(GEngine->GameViewport->GetWorld(), AgeGateWidgetClass);
@@ -644,7 +644,7 @@ void UKidWorkflow::ShowDemoControls()
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* DemoControlsClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/BP_DemoControlsWidget.BP_DemoControlsWidget_C"));
+        UClass* DemoControlsClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_DemoControlsWidget.BP_DemoControlsWidget_C"));
         if (DemoControlsClass)
         {
             UDemoControlsWidget* DemoControls = CreateWidget<UDemoControlsWidget>(GEngine->GameViewport->GetWorld(), DemoControlsClass);
@@ -664,7 +664,7 @@ void UKidWorkflow::ShowPlayerHUD()
         if (!PlayerHUDWidget)
         {
             // Load the widget blueprint dynamically
-            UClass* HUDWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/BP_PlayerHUDWidget.BP_PlayerHUDWidget_C"));
+            UClass* HUDWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_PlayerHUDWidget.BP_PlayerHUDWidget_C"));
             if (HUDWidgetClass)
             {
                 PlayerHUDWidget = Cast<UPlayerHUDWidget>(CreateWidget<UUserWidget>(GEngine->GameViewport->GetWorld(), HUDWidgetClass));
@@ -684,7 +684,7 @@ void UKidWorkflow::ShowFloatingChallengeWidget(const FString& OTP, const FString
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* FloatingChallengeWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/BP_FloatingChallengeWidget.BP_FloatingChallengeWidget_C"));
+        UClass* FloatingChallengeWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_FloatingChallengeWidget.BP_FloatingChallengeWidget_C"));
         if (FloatingChallengeWidgetClass)
         {
             FloatingChallengeWidget = CreateWidget<UFloatingChallengeWidget>(GEngine->GameViewport->GetWorld(), FloatingChallengeWidgetClass);
@@ -701,7 +701,7 @@ void UKidWorkflow::ShowUnavailableWidget()
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* UnavailableWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/BP_UnavailableWidget.BP_UnavailableWidget_C"));
+        UClass* UnavailableWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_UnavailableWidget.BP_UnavailableWidget_C"));
         if (UnavailableWidgetClass)
         {
             UUnavailableWidget* UnavailableWidget = CreateWidget<UUnavailableWidget>(GEngine->GameViewport->GetWorld(), UnavailableWidgetClass);
