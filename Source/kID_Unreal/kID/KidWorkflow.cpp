@@ -656,7 +656,8 @@ void UKidWorkflow::UpdateHUDText()
             FString SessionId = SessionInfo.IsValid() ? 
                         SessionInfo->HasField(TEXT("sessionId")) ? SessionInfo->GetStringField(TEXT("sessionId")) : TEXT("Default Permissions")  : TEXT("N/A");
             FString ChallengeId;
-            FString HUDText = FString::Printf(TEXT("ageStatus: %s sessionId: %s challengeId %s"), *AgeStatus, *SessionId, LoadChallengeId(ChallengeId) ? *ChallengeId : TEXT("N/A"));
+            FString HUDText = FString::Printf(TEXT("Session: %s\nChallenge: %s\nAge Status: %s"), *SessionId, 
+                        LoadChallengeId(ChallengeId) ? *ChallengeId : TEXT("N/A"), *AgeStatus);
             PlayerHUDWidget->SetText(HUDText);
         } 
         else    
