@@ -6,6 +6,7 @@
 #include "Widgets/FloatingChallengeWidget.h"
 #include "Widgets/AgeGateWidget.h"
 #include "Widgets/UnavailableWidget.h"
+#include "Widgets/DemoControlsWidget.h"
 #include "KidWorkflow.generated.h"
 
 UCLASS()
@@ -31,6 +32,9 @@ public:
     void CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, 
                             TFunction<void(bool, const FString&)> OnConsentGranted);
 
+    // test/set-challenge-status for testing consent challenges
+    void SetChallengeStatus(const FString& Location);
+
     // feature management - roadmap
     void AttemptTurnOnRestrictedFeature(const FString& FeatureName, TFunction<void()> EnableFeature);
     void ShowFeatureConsentChallenge(TFunction<void()> OnConsentGranted);
@@ -50,8 +54,9 @@ public:
      // UI Elements
     void ShowUnavailableWidget();
     void ShowAgeGate(TFunction<void(const FString&)> Callback);
+    void ShowTestSetChallengeWidget(TFunction<void(const FString&, const FString&)> Callback);
     void ShowFloatingChallengeWidget(const FString& OTP, const FString& QRCodeUrl, TFunction<void(const FString&)> OnEmailSubmitted);
-    void DismissChallengeWindow();
+    void DismissFloatingChallengeWidget();
     void ShowDemoControls();
     void ShowPlayerHUD();
     void UpdateHUDText();
@@ -75,4 +80,7 @@ private:
 
     UPROPERTY()
     UFloatingChallengeWidget* FloatingChallengeWidget;
+
+    UPROPERTY()
+    UDemoControlsWidget* DemoControlsWidget;
 };

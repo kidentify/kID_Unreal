@@ -4,6 +4,7 @@
 #include "JsonUtilities.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
+#include "Misc/DefaultValueHelper.h"
 #include "Widgets/SWeakWidget.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
@@ -16,6 +17,7 @@
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
 #include "Widgets/DemoControlsWidget.h"
+#include "Widgets/TestSetChallengeWidget.h"
 
 // Constants
 const int32 ConsentTimeoutSeconds = 300;
@@ -502,19 +504,53 @@ void UKidWorkflow::ShowFeatureConsentChallenge(TFunction<void()> EnableFeature)
     });
 }
 
+void UKidWorkflow::SetChallengeStatus(const FString& Location)
+{
+    ShowTestSetChallengeWidget([this, Location](const FString& Status, const FString& AgeString)
+    {
+        FString ChallengeId;
+        if (LoadChallengeId(ChallengeId)) {
+            TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+            JsonObject->SetStringField(TEXT("status"), Status);
+            JsonObject->SetStringField(TEXT("challengeId"), ChallengeId);
+            JsonObject->SetStringField(TEXT("jurisdiction"), Location);
+            int32 age = 0;
+            if (FDefaultValueHelper::ParseInt(AgeString, age))
+            {
+                // Assign the integer to a JSON object as a number field
+                JsonObject->SetNumberField(TEXT("age"), age);
+            }
+
+            FString ContentJsonString;
+            TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ContentJsonString);
+            FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+
+            HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/test/set-challenge-status"), ContentJsonString, AuthToken, 
+                            [](FHttpResponsePtr Response, bool bWasSuccessful)
+            {
+                if (bWasSuccessful && Response.IsValid())
+                {
+                    UE_LOG(LogTemp, Log, TEXT("/test/set-challenge-status succeeded"));
+                }
+            });
+        }
+   });
+}
+
 void UKidWorkflow::HandleProhibitedStatus()
 {
     UE_LOG(LogTemp, Warning, TEXT("Player does not meet the minimum age requirement. Play is disabled."));
-    DismissChallengeWindow();
+    DismissFloatingChallengeWidget();
     ShowUnavailableWidget();
 }
 
-void UKidWorkflow::DismissChallengeWindow()
+void UKidWorkflow::DismissFloatingChallengeWidget()
 {
     if (FloatingChallengeWidget && FloatingChallengeWidget->IsInViewport())
     {
         FloatingChallengeWidget->RemoveFromParent();
         FloatingChallengeWidget = nullptr;
+        DemoControlsWidget->SetTestSetChallengeButtonVisibility(false);
     }
 }
 
@@ -527,7 +563,7 @@ void UKidWorkflow::SaveChallengeId(const FString& InChallengeId)
 void UKidWorkflow::ClearChallengeId()
 {
     IFileManager::Get().Delete(*(FPaths::ProjectSavedDir() + TEXT("/ChallengeId.txt")));
-    DismissChallengeWindow();
+    DismissFloatingChallengeWidget();
     UpdateHUDText();
 }
 
@@ -647,6 +683,23 @@ void UKidWorkflow::ShowAgeGate(TFunction<void(const FString&)> Callback)
     }
 }
 
+void UKidWorkflow::ShowTestSetChallengeWidget(TFunction<void(const FString&, const FString&)> Callback)
+{
+    if (GEngine && GEngine->GameViewport)
+    {
+        UClass* TestSetChallengeWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_TestSetChallengeWidget.BP_TestSetChallengeWidget_C"));
+        if (TestSetChallengeWidgetClass)
+        {
+            UTestSetChallengeWidget* TestSetChallengeWidget = CreateWidget<UTestSetChallengeWidget>(GEngine->GameViewport->GetWorld(), TestSetChallengeWidgetClass);
+            if (TestSetChallengeWidget)
+            {
+                TestSetChallengeWidget->InitializeWidget(Callback);
+                TestSetChallengeWidget->AddToViewport();
+            }
+        }
+    }
+}
+
 void UKidWorkflow::ShowDemoControls()
 {
     if (GEngine && GEngine->GameViewport)
@@ -654,11 +707,12 @@ void UKidWorkflow::ShowDemoControls()
         UClass* DemoControlsClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_DemoControlsWidget.BP_DemoControlsWidget_C"));
         if (DemoControlsClass)
         {
-            UDemoControlsWidget* DemoControls = CreateWidget<UDemoControlsWidget>(GEngine->GameViewport->GetWorld(), DemoControlsClass);
-            if (DemoControls)
+            DemoControlsWidget = CreateWidget<UDemoControlsWidget>(GEngine->GameViewport->GetWorld(), DemoControlsClass);
+            if (DemoControlsWidget)
             {
-                DemoControls->SetKidWorkflow(this);
-                DemoControls->AddToViewport();
+                DemoControlsWidget->SetKidWorkflow(this);
+                DemoControlsWidget->SetTestSetChallengeButtonVisibility(false);
+                DemoControlsWidget->AddToViewport();
             }
         }
     }
@@ -699,6 +753,7 @@ void UKidWorkflow::ShowFloatingChallengeWidget(const FString& OTP, const FString
             {
                 FloatingChallengeWidget->InitializeWidget(this, OTP, QRCodeUrl, OnEmailSubmitted);
                 FloatingChallengeWidget->AddToViewport();
+                DemoControlsWidget->SetTestSetChallengeButtonVisibility(true);
             }
         }
     }

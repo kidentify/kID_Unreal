@@ -60,7 +60,7 @@ void HttpRequestHelper::GetRequestWithAuth(const FString& Url, const FString& Au
 
 void HttpRequestHelper::PostRequestWithAuth(const FString& Url, const FString& ContentJsonString, const FString& AuthToken, TFunction<void(TSharedPtr<IHttpResponse, ESPMode::ThreadSafe>, bool)> Callback)
 {
-    UE_LOG(LogTemp, Log, TEXT("Call to %s"), *Url);
+    UE_LOG(LogTemp, Log, TEXT("Call to %s with body %s"), *Url, *ContentJsonString);
     TSharedRef<IHttpRequest, ESPMode::ThreadSafe> Request = FHttpModule::Get().CreateRequest();
     Request->OnProcessRequestComplete().BindLambda([Callback](FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
     {

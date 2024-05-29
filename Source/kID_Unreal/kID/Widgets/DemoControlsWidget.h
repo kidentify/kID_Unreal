@@ -18,7 +18,11 @@ public:
     UFUNCTION()
     void OnClearSessionClicked();
 
+    UFUNCTION()
+    void OnTestSetChallengeClicked();
+
     void SetKidWorkflow(UKidWorkflow* InKidWorkflow);
+    void SetTestSetChallengeButtonVisibility(bool bVisible);
 
 private:
     UPROPERTY(meta = (BindWidget))
@@ -27,5 +31,7 @@ private:
     class UButton* SubmitButton;
     UPROPERTY(meta = (BindWidget))
     class UButton* ClearSessionButton;
+    UPROPERTY(meta = (BindWidget))
+    class UButton* TestSetChallengeButton;
     UKidWorkflow* KidWorkflow = nullptr;
 };
