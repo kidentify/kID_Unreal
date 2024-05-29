@@ -3,7 +3,7 @@
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
 #include "Components/Button.h"
-#include "KidWorkflow.h"
+#include "../KidWorkflow.h"
 #include "QR-Code-generator/qrcodegen.hpp"
 
 void UFloatingChallengeWidget::InitializeWidget(UKidWorkflow* InMyKidWorkflow, 

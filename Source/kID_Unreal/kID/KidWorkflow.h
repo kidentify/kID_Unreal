@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
-#include "PlayerHUDWidget.h"
-#include "FloatingChallengeWidget.h"
-#include "AgeGateWidget.h"
-#include "UnavailableWidget.h"
+#include "Widgets/PlayerHUDWidget.h"
+#include "Widgets/FloatingChallengeWidget.h"
+#include "Widgets/AgeGateWidget.h"
+#include "Widgets/UnavailableWidget.h"
 #include "KidWorkflow.generated.h"
 
 UCLASS()

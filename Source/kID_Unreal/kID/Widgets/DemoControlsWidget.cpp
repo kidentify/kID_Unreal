@@ -1,5 +1,5 @@
 #include "DemoControlsWidget.h"
-#include "KidWorkflow.h"
+#include "../KidWorkflow.h"
 #include "Components/EditableTextBox.h"
 #include "Components/Button.h"
 

@@ -15,8 +15,7 @@
 #include "Engine/Texture2D.h"
 #include "Engine/Engine.h"
 #include "Engine/GameViewportClient.h"
-#include "TimerManager.h"
-#include "DemoControlsWidget.h"
+#include "Widgets/DemoControlsWidget.h"
 
 // Constants
 const int32 ConsentTimeoutSeconds = 300;
