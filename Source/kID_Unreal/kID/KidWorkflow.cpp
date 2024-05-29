@@ -20,11 +20,13 @@
 #include "Widgets/TestSetChallengeWidget.h"
 
 // Constants
-const int32 ConsentTimeoutSeconds = 300;
-const int32 ConsentPollingInterval = 1;
-const FString BaseUrl = TEXT("https://game-api.k-id.com/api/v1");
-const FString ClientId = TEXT("12345678-1234-1234-1234-123456789012");
+const FString BaseUrl = TEXT("https://game-api.k-id.com/api/v1"); 
 
+const int32 ConsentTimeoutSeconds = 300; // maximum time to wait for consent in seconds
+const int32 ConsentPollingInterval = 1; // time to wait between polling for consent in seconds
+const FString ClientId = TEXT("12345678-1234-1234-1234-123456789012"); // client ID for the demo
+
+// Unreal PIE aid to prevent long poll from causing issues after quitting the game
 bool UKidWorkflow::bShutdown = false;
 
 void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
@@ -63,8 +65,15 @@ void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
 
 }
 
+
+// This function is called to start a full kID workflow.  For the demo, this function doesn't
+// get invoked until the player presses the "Start Session" button in the demo controls.  In a real game 
+// this would happen on startup based on acquiring the location/jurisdistion from the player's IP address
+// or other means.
 void UKidWorkflow::StartKidSession(const FString& Location)
 {
+
+    
     if (AuthToken.IsEmpty())
     {
         UE_LOG(LogTemp, Error, TEXT("AuthToken is not assigned. Please call InitializeAuthToken first."));
@@ -160,6 +169,9 @@ void UKidWorkflow::HandleExistingChallenge(const FString& ChallengeId)
     });
 }
 
+// This function is called when a player has passed the age gate and is ready to start a session or 
+// the age was already known because the game has stored the kID session information previously 
+// and associated it with an identity.
 void UKidWorkflow::StartKidSessionWithDOB(const FString& Location, const FString& DOB)
 {
     if (AuthToken.IsEmpty())
