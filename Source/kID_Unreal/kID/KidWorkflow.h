@@ -78,6 +78,12 @@ private:
     FTimerHandle ConsentPollingTimerHandle;
     TSharedPtr<FJsonObject> SessionInfo;
     FString AuthToken;
+
+    // Mode declares what access the player has in the game based on age and consent. 
+    // For None status, the player should be disallowed. 
+    // For DataLite status, the player should be allowed to use "data-lite features" only.
+    // For Full status, the player should be allowed to use all features that don't require 
+    // further permission based on their age and jurisdiction.
     AccessMode Mode = AccessMode::DataLite;
 
     UPROPERTY()
