@@ -7,6 +7,7 @@
 #include "Widgets/AgeGateWidget.h"
 #include "Widgets/UnavailableWidget.h"
 #include "Widgets/DemoControlsWidget.h"
+#include "Widgets/AgeAssuranceWidget.h"
 #include "KidWorkflow.generated.h"
 
 UCLASS()
@@ -29,7 +30,7 @@ public:
     void HandleExistingChallenge(const FString& ChallengeId);
     void StartKidSessionWithDOB(const FString& Location, const FString& DOB);
     void GetUserAge(const FString& Location, TFunction<void(bool, bool, const FString&)> Callback);
-    void ValidateAge(TFunction<void(bool)> Callback);
+    void ValidateAge(const FString& DOB, TFunction<void(bool)> Callback);
     void GetDefaultPermissions(const FString& Location);
     void ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, const FString& QRCodeUrl, 
                             TFunction<void(bool, const FString&)> OnConsentGranted);
@@ -39,20 +40,20 @@ public:
     void HandleProhibitedStatus();
     void HandleNoConsent();
 
-    // test/set-challenge-status for testing consent challenges
+    // Use the test/set-challenge-status API for testing consent challenges
     void SetChallengeStatus(const FString& Location);
 
     // feature management - roadmap
     void AttemptTurnOnRestrictedFeature(const FString& FeatureName, TFunction<void()> EnableFeature);
     void ShowFeatureConsentChallenge(TFunction<void()> OnConsentGranted);
 
-    // managing session local storage
+    // managing sessions in local storage
     void SaveSessionInfo();
     bool GetSavedSessionInfo();
     void ClearSession();
     TSharedPtr<FJsonObject> FindPermission(const FString& FeatureName);
 
-    // managing challenge id local storage
+    // managing saved challenge id in local storage
     bool HasChallengeId();
     void SaveChallengeId(const FString& InChallengeId);
     void ClearChallengeId();
@@ -62,6 +63,7 @@ public:
     void ShowUnavailableWidget();
     void ShowAgeGate(TFunction<void(const FString&)> Callback);
     void ShowTestSetChallengeWidget(TFunction<void(const FString&, const FString&)> Callback);
+    void ShowAgeAssuranceWidget(const FString& DateOfBirth, TFunction<void(bool)> OnAssuranceResponse);
     void ShowFloatingChallengeWidget(const FString& OTP, const FString& QRCodeUrl, TFunction<void(const FString&)> OnEmailSubmitted);
     void DismissFloatingChallengeWidget();
     void ShowDemoControls();
