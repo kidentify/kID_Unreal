@@ -102,12 +102,12 @@ void UKidWorkflow::StartKidSession(const FString& Location)
     }
     else
     {
-        GetUserAge(Location, [this, Location](bool ageGateShown, bool bShouldVerify, const FString& DOB)
+        GetUserAge(Location, [this, Location](bool ageGateShown, bool bAgeAssuranceRequired, const FString& DOB)
         {
             if (ageGateShown) {
-                if (bShouldVerify)
+                if (bAgeAssuranceRequired)
                 {
-                    ValidateAge([this, Location, DOB](bool bValidated)
+                    ValidateAge(DOB, [this, Location, DOB](bool bValidated)
                     {
                         if (bValidated)
                         {
@@ -247,18 +247,18 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
             if (FJsonSerializer::Deserialize(Reader, JsonResponse))
             {
                 bool bShouldDisplay = JsonResponse->GetBoolField(TEXT("shouldDisplay"));
-                bool bShouldVerify = JsonResponse->GetBoolField(TEXT("ageAssuranceRequired"));
+                bool bAgeAssuranceRequired = JsonResponse->GetBoolField(TEXT("ageAssuranceRequired"));
 
                 if (bShouldDisplay)
                 {
-                    ShowAgeGate([Callback, bShouldVerify](const FString& DOB)
+                    ShowAgeGate([Callback, bAgeAssuranceRequired](const FString& DOB)
                     {
-                        Callback(true, bShouldVerify, DOB);
+                        Callback(true, bAgeAssuranceRequired, DOB);
                     });
                 } 
                 else 
                 {    
-                    Callback(false /* ageGateShown */, false /* shouldVerify */, TEXT(""));
+                    Callback(false /* ageGateShown */, false /* ageAssuranceRequired */, TEXT(""));
                 }
             }
         }
@@ -269,12 +269,10 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
     });
 }
 
-void UKidWorkflow::ValidateAge(TFunction<void(bool)> Callback)
+void UKidWorkflow::ValidateAge(const FString& DOB, TFunction<void(bool)> Callback)
 {
     UE_LOG(LogTemp, Log, TEXT("Validating age..."));
-    // Integrate age assurance in your game here
-    bool bValidated = true;  
-    Callback(bValidated);
+    ShowAgeAssuranceWidget(DOB, Callback);
 }
 
 void UKidWorkflow::GetDefaultPermissions(const FString& Location)
@@ -783,6 +781,23 @@ void UKidWorkflow::ShowFloatingChallengeWidget(const FString& OTP, const FString
                 FloatingChallengeWidget->InitializeWidget(this, OTP, QRCodeUrl, OnEmailSubmitted);
                 FloatingChallengeWidget->AddToViewport();
                 DemoControlsWidget->SetTestSetChallengeButtonVisibility(true);
+            }
+        }
+    }
+}
+
+void UKidWorkflow::ShowAgeAssuranceWidget(const FString& DateOfBirth, TFunction<void(bool)> OnAssuranceResponse)
+{
+    if (GEngine && GEngine->GameViewport)
+    {
+        UClass* AgeAssuranceWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_AgeAssuranceWidget.BP_AgeAssuranceWidget_C"));
+        if (AgeAssuranceWidgetClass)
+        {
+            UAgeAssuranceWidget* AgeAssuranceWidget = CreateWidget<UAgeAssuranceWidget>(GEngine->GameViewport->GetWorld(), AgeAssuranceWidgetClass);
+            if (AgeAssuranceWidget)
+            {
+                AgeAssuranceWidget->InitializeWidget(DateOfBirth, OnAssuranceResponse);
+                AgeAssuranceWidget->AddToViewport();
             }
         }
     }
