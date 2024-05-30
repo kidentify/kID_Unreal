@@ -104,6 +104,6 @@ void UFloatingChallengeWidget::OnCancelClicked()
 {
     if (KidWorkflow) 
     {
-        KidWorkflow->HandleProhibitedStatus();
+        KidWorkflow->HandleNoConsent();
     }
 }

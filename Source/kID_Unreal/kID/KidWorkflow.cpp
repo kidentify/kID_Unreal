@@ -72,8 +72,6 @@ void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
 // or other means.
 void UKidWorkflow::StartKidSession(const FString& Location)
 {
-
-    
     if (AuthToken.IsEmpty())
     {
         UE_LOG(LogTemp, Error, TEXT("AuthToken is not assigned. Please call InitializeAuthToken first."));
@@ -117,7 +115,7 @@ void UKidWorkflow::StartKidSession(const FString& Location)
                         }
                         else
                         {
-                            HandleProhibitedStatus();
+                            HandleNoConsent();
                         }
                     });
                 }
@@ -161,7 +159,7 @@ void UKidWorkflow::HandleExistingChallenge(const FString& ChallengeId)
                     }
                     else
                     {
-                        HandleProhibitedStatus();
+                        HandleNoConsent();
                     }
                 });
             }
@@ -215,12 +213,13 @@ void UKidWorkflow::StartKidSessionWithDOB(const FString& Location, const FString
                         }
                         else
                         {
-                            HandleProhibitedStatus();
+                            HandleNoConsent();
                         }
                     });
                 }
                 else if (Status == TEXT("PASS"))
                 {
+                    Mode = AccessMode::Full;
                     SessionInfo = JsonResponse->GetObjectField(TEXT("session"));
                     SaveSessionInfo();
                 }
@@ -291,8 +290,8 @@ void UKidWorkflow::GetDefaultPermissions(const FString& Location)
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, SessionInfo))
             {
+                Mode = AccessMode::Full;
                 SaveSessionInfo();
-                UE_LOG(LogTemp, Log, TEXT("Call to GetDefaultPermissions succeeded: %s"), *Response->GetContentAsString());
             }
         }
         else
@@ -419,6 +418,7 @@ void UKidWorkflow::GetSessionPermissions(const FString& SessionId, const FString
     {
         if (bWasSuccessful && Response.IsValid())
         {
+            Mode = AccessMode::Full;
             if (Response->GetResponseCode() == 304)
             {
                 UE_LOG(LogTemp, Log, TEXT("Session information is up-to-date."));
@@ -505,6 +505,7 @@ void UKidWorkflow::ShowFeatureConsentChallenge(TFunction<void()> EnableFeature)
                 if (bConsentGranted)
                 {
                     GetSessionPermissions(SessionId, TEXT(""));
+                    ClearChallengeId();
                     EnableFeature();
                 }
                 else
@@ -554,6 +555,14 @@ void UKidWorkflow::HandleProhibitedStatus()
     UE_LOG(LogTemp, Warning, TEXT("Player does not meet the minimum age requirement. Play is disabled."));
     DismissFloatingChallengeWidget();
     ShowUnavailableWidget();
+    Mode = AccessMode::None;
+}
+
+void UKidWorkflow::HandleNoConsent()
+{
+    UE_LOG(LogTemp, Warning, TEXT("Player has no consent.  Stay in Data Lite access mode."));
+    DismissFloatingChallengeWidget();
+    Mode = AccessMode::DataLite;
 }
 
 void UKidWorkflow::DismissFloatingChallengeWidget()
@@ -604,6 +613,7 @@ void UKidWorkflow::AttemptTurnOnChat()
 
 void UKidWorkflow::ClearSession()
 {
+    Mode = AccessMode::DataLite;
     if (AgeGateWidget && AgeGateWidget->IsInViewport())
     {
         AgeGateWidget->RemoveFromParent();
@@ -643,6 +653,7 @@ bool UKidWorkflow::GetSavedSessionInfo()
         if (FJsonSerializer::Deserialize(Reader, SessionInfo))
         {
             UE_LOG(LogTemp, Log, TEXT("Found saved session."));
+            Mode = AccessMode::Full;
             UpdateHUDText();
             return true;
         }
@@ -668,8 +679,13 @@ void UKidWorkflow::UpdateHUDText()
             FString SessionId = SessionInfo.IsValid() ? 
                         SessionInfo->HasField(TEXT("sessionId")) ? SessionInfo->GetStringField(TEXT("sessionId")) : TEXT("Default Permissions")  : TEXT("N/A");
             FString ChallengeId;
-            FString HUDText = FString::Printf(TEXT("Session: %s\nChallenge: %s\nAge Status: %s"), *SessionId, 
-                        LoadChallengeId(ChallengeId) ? *ChallengeId : TEXT("N/A"), *AgeStatus);
+            FString HUDText = FString::Printf(
+                        TEXT("Session: %s\nChallenge: %s\nAge Status: %s\nAccess Mode: %s"), 
+                        *SessionId, 
+                        LoadChallengeId(ChallengeId) ? *ChallengeId : TEXT("N/A"), 
+                        *AgeStatus,
+                        (Mode == AccessMode::None) ? TEXT("None") : 
+                            (Mode == AccessMode::DataLite) ? TEXT("Data Lite") : TEXT("Full"));
             PlayerHUDWidget->SetText(HUDText);
         } 
         else    

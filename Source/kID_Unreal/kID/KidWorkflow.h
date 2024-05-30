@@ -15,6 +15,12 @@ class UKidWorkflow : public UObject
     GENERATED_BODY()
 
 public:
+    enum class AccessMode {
+        None, // player has no access (under the minimum age)
+        DataLite, // player has access to data-lite features
+        Full // full access to all features
+    };
+
     void Initialize(TFunction<void(bool)> Callback);
     void CleanUp();
 
@@ -28,9 +34,10 @@ public:
     void ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, const FString& QRCodeUrl, 
                             TFunction<void(bool, const FString&)> OnConsentGranted);
     void GetSessionPermissions(const FString& SessionId, const FString& ETag);
-    void HandleProhibitedStatus();
     void CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, 
                             TFunction<void(bool, const FString&)> OnConsentGranted);
+    void HandleProhibitedStatus();
+    void HandleNoConsent();
 
     // test/set-challenge-status for testing consent challenges
     void SetChallengeStatus(const FString& Location);
@@ -71,6 +78,7 @@ private:
     FTimerHandle ConsentPollingTimerHandle;
     TSharedPtr<FJsonObject> SessionInfo;
     FString AuthToken;
+    AccessMode Mode = AccessMode::DataLite;
 
     UPROPERTY()
     UAgeGateWidget* AgeGateWidget;
