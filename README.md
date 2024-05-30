@@ -31,7 +31,7 @@ There are 7 widgets implemented as Unreal Blueprints that can be customized.  Ea
 - [AgeGateWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeGateWidget.cpp): Displays the age gate.
 - [FloatingChallengeWidget.cpp](Source/kID_Unreal/kID/Widgets/FloatingChallengeWidget.cpp): Displays the challenge screen to get parent consent, including the generated QR code.
 - [UnavailableWidget.cpp](Source/kID_Unreal/kID/Widgets/UnavailableWidget.cpp): Blocks play when a player fails the consent challenge or is below the minimum age to play the game. 
-- [AgeAssuranceWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeAssuranceWidget.cpp): Tests age assurance for required jurisdictions (e.g. GB) by presenting a dialog with a yes or no button for testing.
+- [AgeAssuranceWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeAssuranceWidget.cpp): Demonstrates age assurance for required jurisdictions (e.g. GB) by presenting a dialog with a yes or no button for testing.
 - [TestSetChallengeWidget.cpp](Source/kID_Unreal/kID/Widgets/TestSetChallengeWidget.cpp): Calls the test/set-challenge-status API to simulate consent for testing purposes. 
 
 ## Dependencies
