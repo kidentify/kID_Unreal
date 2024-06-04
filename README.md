@@ -1,8 +1,9 @@
 # kID_Unreal
  Unreal Demo of kID
 
-
 This demo uses the First Person Template from Unreal 5, and was built using Unreal 5.4.1.  The demo goes through various k-ID workflows as described in the [k-ID Developer Guide](https://docs.google.com/document/d/12J5mkFZvE8LC6aUsSwuxUvuONAsYrQ0aR1yPdJOXrPE/edit#heading=h.a4uiiic96g9p).  
+
+![Screenshot 2024-06-04 at 4 51 31 PM](https://github.com/kidentify/kID_Unreal/assets/3493285/71b04185-097c-4ffa-aae3-7857fea87586)
 
 ## Installation
 - Clone the repo locally
