@@ -109,17 +109,17 @@ void UKidWorkflow::StartKidSession(const FString& Location)
                 {
                     ValidateAge(DOB, [this, Location, DOB](bool bValidated)
                     {
+                        DismissAgeAssuranceWidget();
                         if (bValidated)
                         {
                             UE_LOG(LogTemp, Log, TEXT("Age successfully validated!"));
-                            DismissAgeAssuranceWidget();
                             StartKidSessionWithDOB(Location, DOB);
                         }
                         else
                         {
                             UE_LOG(LogTemp, Warning, 
-                                    TEXT("Player's age could not be verified.  Stay in Data Lite access mode."));
-                            HandleAgeNotVerified();
+                                TEXT("Player's age could not be verified.  Challenge for someone born in 2014."));
+                            StartKidSessionWithDOB(Location, TEXT("2014"));
                         }
                     });
                 }
@@ -577,12 +577,6 @@ void UKidWorkflow::HandleNoConsent()
 {
     UE_LOG(LogTemp, Warning, TEXT("Player has no consent.  Stay in Data Lite access mode."));
     DismissFloatingChallengeWidget();
-    Mode = AccessMode::DataLite;
-}
-
-void UKidWorkflow::HandleAgeNotVerified()
-{
-    DismissAgeAssuranceWidget();
     Mode = AccessMode::DataLite;
 }
 

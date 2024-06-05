@@ -40,7 +40,6 @@ public:
                             
     void HandleProhibitedStatus();
     void HandleNoConsent();
-    void HandleAgeNotVerified();
 
     // Use the test/set-challenge-status API for testing consent challenges
     void SetChallengeStatus(const FString& Location);
