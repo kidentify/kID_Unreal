@@ -27,6 +27,9 @@ void UAgeAssuranceWidget::InitializeWidget(const FString& DateOfBirth, TFunction
     StartHttpServer();
 }
 
+// This function is called when the "I am" button is clicked, which 
+// is for testing purposes.  In a real world scenario, the user
+// would need to pass a verification process to confirm their age.
 void UAgeAssuranceWidget::OnYesClicked()
 {
     StopHttpServer();
