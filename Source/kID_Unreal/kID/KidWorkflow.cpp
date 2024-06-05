@@ -111,11 +111,15 @@ void UKidWorkflow::StartKidSession(const FString& Location)
                     {
                         if (bValidated)
                         {
+                            UE_LOG(LogTemp, Log, TEXT("Age successfully validated!"));
+                            DismissAgeAssuranceWidget();
                             StartKidSessionWithDOB(Location, DOB);
                         }
                         else
                         {
-                            HandleNoConsent();
+                            UE_LOG(LogTemp, Warning, 
+                                    TEXT("Player's age could not be verified.  Stay in Data Lite access mode."));
+                            HandleAgeNotVerified();
                         }
                     });
                 }
@@ -167,9 +171,9 @@ void UKidWorkflow::HandleExistingChallenge(const FString& ChallengeId)
     });
 }
 
-// This function is called when a player has passed the age gate and is ready to start a session or 
-// the age was already known because the game has stored the kID session information previously 
-// and associated it with an identity.
+// This function is called when a player has passed the age gate and assurance if necessary
+// and is ready to start a session or the age was already known because the game has stored 
+// the kID session information previously and associated it with an identity.
 void UKidWorkflow::StartKidSessionWithDOB(const FString& Location, const FString& DOB)
 {
     if (AuthToken.IsEmpty())
@@ -515,6 +519,19 @@ void UKidWorkflow::ShowFeatureConsentChallenge(TFunction<void()> EnableFeature)
     });
 }
 
+void UKidWorkflow::EnableChat()
+{
+    UE_LOG(LogTemp, Log, TEXT("Text chat has been enabled."));
+}
+
+void UKidWorkflow::AttemptTurnOnChat()
+{
+    AttemptTurnOnRestrictedFeature(TEXT("text-chat-public"), [this]()
+    {
+        EnableChat();
+    });
+}
+
 void UKidWorkflow::SetChallengeStatus(const FString& Location)
 {
     ShowTestSetChallengeWidget([this, Location](const FString& Status, const FString& AgeString)
@@ -563,6 +580,12 @@ void UKidWorkflow::HandleNoConsent()
     Mode = AccessMode::DataLite;
 }
 
+void UKidWorkflow::HandleAgeNotVerified()
+{
+    DismissAgeAssuranceWidget();
+    Mode = AccessMode::DataLite;
+}
+
 void UKidWorkflow::DismissFloatingChallengeWidget()
 {
     if (FloatingChallengeWidget && FloatingChallengeWidget->IsInViewport())
@@ -570,6 +593,16 @@ void UKidWorkflow::DismissFloatingChallengeWidget()
         FloatingChallengeWidget->RemoveFromParent();
         FloatingChallengeWidget = nullptr;
         DemoControlsWidget->SetTestSetChallengeButtonVisibility(false);
+    }
+}
+
+void UKidWorkflow::DismissAgeAssuranceWidget()
+{
+    if (AgeAssuranceWidget && AgeAssuranceWidget->IsInViewport())
+    {
+        AgeAssuranceWidget->StopHttpServer();
+        AgeAssuranceWidget->RemoveFromParent();
+        AgeAssuranceWidget = nullptr;
     }
 }
 
@@ -594,19 +627,6 @@ bool UKidWorkflow::LoadChallengeId(FString& OutChallengeId)
 bool UKidWorkflow::HasChallengeId()
 {
     return IFileManager::Get().FileExists(*(FPaths::ProjectSavedDir() + TEXT("/ChallengeId.txt")));
-}
-
-void UKidWorkflow::EnableChat()
-{
-    UE_LOG(LogTemp, Log, TEXT("Text chat has been enabled."));
-}
-
-void UKidWorkflow::AttemptTurnOnChat()
-{
-    AttemptTurnOnRestrictedFeature(TEXT("text-chat-public"), [this]()
-    {
-        EnableChat();
-    });
 }
 
 void UKidWorkflow::ClearSession()
@@ -793,7 +813,7 @@ void UKidWorkflow::ShowAgeAssuranceWidget(const FString& DateOfBirth, TFunction<
         UClass* AgeAssuranceWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_AgeAssuranceWidget.BP_AgeAssuranceWidget_C"));
         if (AgeAssuranceWidgetClass)
         {
-            UAgeAssuranceWidget* AgeAssuranceWidget = CreateWidget<UAgeAssuranceWidget>(GEngine->GameViewport->GetWorld(), AgeAssuranceWidgetClass);
+            AgeAssuranceWidget = CreateWidget<UAgeAssuranceWidget>(GEngine->GameViewport->GetWorld(), AgeAssuranceWidgetClass);
             if (AgeAssuranceWidget)
             {
                 AgeAssuranceWidget->InitializeWidget(DateOfBirth, OnAssuranceResponse);
@@ -835,6 +855,7 @@ TSharedPtr<FJsonObject> UKidWorkflow::FindPermission(const FString& FeatureName)
 
 void UKidWorkflow::CleanUp()
 {
+    DismissAgeAssuranceWidget();
     bShutdown = true;
     UE_LOG(LogTemp, Log, TEXT("Cleaning up."));
     if (ConsentPollingTimerHandle.IsValid())

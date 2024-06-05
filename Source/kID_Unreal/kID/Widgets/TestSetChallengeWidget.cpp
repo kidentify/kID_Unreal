@@ -7,15 +7,8 @@ void UTestSetChallengeWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    if (CancelButton)
-    {
-        CancelButton->OnClicked.AddDynamic(this, &UTestSetChallengeWidget::OnCancelButtonClicked);
-    }
-
-    if (SubmitButton)
-    {
-        SubmitButton->OnClicked.AddDynamic(this, &UTestSetChallengeWidget::OnSubmitButtonClicked);
-    }
+    CancelButton->OnClicked.AddDynamic(this, &UTestSetChallengeWidget::OnCancelButtonClicked);
+    SubmitButton->OnClicked.AddDynamic(this, &UTestSetChallengeWidget::OnSubmitButtonClicked);
 }
 
 void UTestSetChallengeWidget::InitializeWidget(TFunction<void(const FString&, const FString&)> InOnSubmitCallback)

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Age Verification</title>
+    <style>
+        .responsive-iframe {
+            width: 100%;
+            height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <iframe class="responsive-iframe" 
+        src="PRIVATELY_URL"
+        allow="camera;microphone"></iframe>
+
+    <script>
+        let initialPasscode = 'INITIAL_PASSCODE';
+        let useFaceScan = USE_FACE_SCAN;
+        let failFaceScan = FAIL_FACE_SCAN;
+        let futurePasscode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        function validateAdult(isAdult) {
+            let url = `http://localhost:8080/validate-adult?isAdult=${isAdult}&passcode=${futurePasscode}`;
+            fetch(url)
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Response from server:', data);
+                    window.close();
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        window.onload = function() {
+            let authUrl = `http://localhost:8080/auth?initial=${initialPasscode}&future=${futurePasscode}`;
+            fetch(authUrl)
+                .then(response => response.text())
+                .then(data => {
+                    console.log('Auth response from server:', data);
+                    if (!useFaceScan) {
+                        validateAdult(!failFaceScan);
+                    }
+                })
+                .catch(error => console.error('Auth error:', error));
+        }
+
+        window.addEventListener('message', function(e) { 
+            // Get the sent data 
+            const data = e.data; 
+            console.log(data); 
+
+            var t = JSON.parse(data); 
+            if (t["age_identified"].slice(0,2) >= 25) { 
+                // User verified above 25 
+                validateAdult(true);
+            } else if (t["age_identified"].slice(0,2) >= 18) { 
+                // User between 18 and 24 - needs extra verification step 
+                validateAdult(true);
+            } else { 
+                // User below 18 
+                validateAdult(false);
+            } 
+        });
+    </script>
+</body>
+</html>

@@ -22,6 +22,9 @@ private:
     UPROPERTY(meta = (BindWidget))
     class UButton* SubmitButton;
 
+    UPROPERTY(meta = (BindWidget))
+    class UButton* CancelButton;
+
     TFunction<void(const FString&)> Callback;
 
     UFUNCTION()

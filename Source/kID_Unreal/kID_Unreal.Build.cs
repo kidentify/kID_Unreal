@@ -8,7 +8,8 @@ public class kID_Unreal : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "UMG", "Core", "Json", "HTTP", "NetCommon", "NetCore", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
+		PublicDependencyModuleNames.AddRange(new string[] { "UMG", "Core", "Json", "HTTP", "NetCommon", "NetCore", "CoreUObject", 
+						"Engine", "InputCore", "EnhancedInput", "Sockets", "Networking", "UnrealEd" });
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
 	}
 }

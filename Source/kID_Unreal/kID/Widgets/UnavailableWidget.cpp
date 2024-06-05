@@ -5,10 +5,7 @@ void UUnavailableWidget::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    if (Quit)
-    {
-        Quit->OnClicked.AddDynamic(this, &UUnavailableWidget::OnQuitClicked);
-    }
+    Quit->OnClicked.AddDynamic(this, &UUnavailableWidget::OnQuitClicked);
 }
 
 void UUnavailableWidget::OnQuitClicked()

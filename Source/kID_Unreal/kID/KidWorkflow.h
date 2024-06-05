@@ -37,8 +37,10 @@ public:
     void GetSessionPermissions(const FString& SessionId, const FString& ETag);
     void CheckForConsent(const FString& ChallengeId, FDateTime StartTime, int32 Timeout, 
                             TFunction<void(bool, const FString&)> OnConsentGranted);
+                            
     void HandleProhibitedStatus();
     void HandleNoConsent();
+    void HandleAgeNotVerified();
 
     // Use the test/set-challenge-status API for testing consent challenges
     void SetChallengeStatus(const FString& Location);
@@ -63,9 +65,13 @@ public:
     void ShowUnavailableWidget();
     void ShowAgeGate(TFunction<void(const FString&)> Callback);
     void ShowTestSetChallengeWidget(TFunction<void(const FString&, const FString&)> Callback);
+
     void ShowAgeAssuranceWidget(const FString& DateOfBirth, TFunction<void(bool)> OnAssuranceResponse);
+    void DismissAgeAssuranceWidget();
+
     void ShowFloatingChallengeWidget(const FString& OTP, const FString& QRCodeUrl, TFunction<void(const FString&)> OnEmailSubmitted);
     void DismissFloatingChallengeWidget();
+
     void ShowDemoControls();
     void ShowPlayerHUD();
     void UpdateHUDText();
@@ -87,6 +93,9 @@ private:
     // For Full status, the player should be allowed to use all features that don't require 
     // further permission based on their age and jurisdiction.
     AccessMode Mode = AccessMode::DataLite;
+
+    UPROPERTY()
+    UAgeAssuranceWidget* AgeAssuranceWidget;
 
     UPROPERTY()
     UAgeGateWidget* AgeGateWidget;
