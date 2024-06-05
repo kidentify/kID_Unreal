@@ -13,6 +13,7 @@ This demo uses the First Person Template from Unreal 5, and was built using Unre
 - From the Tools menu in Unreal, select Refresh Visual Studio Code Project, then select Open Visual Studio code
 - Create a file called apikey.txt in the project root directory with your k-ID API key from your k-ID Product
      - **Warning: Do not deploy an API Key in your Unreal binary.  API keys should always be hidden on the server in a real-world implementation to avoid misuse.**
+- If you will integrating Privately, see the instructions in the Dependencies section below
 - Click the Play button in Unreal to enter Play In Editor mode
 
 ## Using the Demo
@@ -37,6 +38,13 @@ There are 7 widgets implemented as Unreal Blueprints that can be customized.  Ea
 - [AgeAssuranceWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeAssuranceWidget.cpp): Demonstrates age assurance for required jurisdictions (e.g. GB) by presenting a dialog with a yes or no button for testing.
 
 ## Dependencies
+
+### Privately
+Integration to Privately using an external web browser is available in this demo.  To enable, you will require valid Privately credentials in a file called privately.json that you should create at the root of the project folder.  The format of this file is:
+
+`{ "session_id": "<privately session id>", "session_password": "privately session password"}`
+
+### QR-Code-generator
 Source from an external QR Code generator C++ library called [QR-Code-generator](https://github.com/nayuki/QR-Code-generator) is included in this repo for convenience, but any QR code generation approach can be used as long as it can create a bitmap that can be placed in the 2D Texture in the `FloatingChallengeWidget` class.  
 
 ## Roadmap
