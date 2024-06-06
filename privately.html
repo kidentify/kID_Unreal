@@ -23,8 +23,8 @@
         let failFaceScan = FAIL_FACE_SCAN;
         let futurePasscode = Math.floor(100000 + Math.random() * 900000).toString();
 
-        function validateAdult(isAdult) {
-            let url = `http://localhost:8080/validate-adult?isAdult=${isAdult}&passcode=${futurePasscode}`;
+        function validateAge(minAge, maxAge) {
+            let url = `http://localhost:8080/validate-age?minAge=${minAge}&maxAge=${maxAge}&passcode=${futurePasscode}`;
             fetch(url)
                 .then(response => response.text())
                 .then(data => {
@@ -53,15 +53,16 @@
             console.log(data); 
 
             var t = JSON.parse(data); 
-            if (t["age_identified"].slice(0,2) >= 25) { 
+            var age_identified = t["age_identified"];
+            if (age_identified.slice(0,2) >= 25) { 
                 // User verified above 25 
-                validateAdult(true);
-            } else if (t["age_identified"].slice(0,2) >= 18) { 
+                validateAge(25, 100);
+            } else if (age_identified.slice(0,2) >= 18) { 
                 // User between 18 and 24 - needs extra verification step 
-                validateAdult(true);
+                validateAge(18, 24);
             } else { 
                 // User below 18 
-                validateAdult(false);
+                validateAge(0, 17);
             } 
         });
     </script>

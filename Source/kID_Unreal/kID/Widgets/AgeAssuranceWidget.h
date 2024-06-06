@@ -22,7 +22,7 @@ public:
     UPROPERTY(meta = (BindWidget))
     class UButton* CancelButton;
 
-    void InitializeWidget(const FString& DateOfBirth, TFunction<void(bool)> InCallback); 
+    void InitializeWidget(int32 Age, TFunction<void(bool, int32, int32)> InCallback); 
 
     void StopHttpServer();
 protected:
@@ -34,9 +34,8 @@ private:
     UFUNCTION()
     void OnNoClicked();
 
-    int32 CalculateAgeFromDOB(const FString& DateOfBirth);
-
-    TFunction<void(bool)> Callback;
+    TFunction<void(bool, int32, int32)> Callback;
+    int32 Age;
 
     UPROPERTY()
     class UFPrivatelyHttpServer* HttpServer;

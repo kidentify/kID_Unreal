@@ -34,9 +34,9 @@ UFPrivatelyHttpServer::~UFPrivatelyHttpServer()
     StopServer();
 }
 
-void UFPrivatelyHttpServer::Initialize(TFunction<void(bool)> InValidateAdultCallback)
+void UFPrivatelyHttpServer::Initialize(TFunction<void(bool, int32, int32)> InAgeValidationCallback)
 {
-    ValidateAdultCallback = InValidateAdultCallback;
+    AgeValidationCallback = InAgeValidationCallback;
 }
 
 bool UFPrivatelyHttpServer::StartServer(int32 Port)
@@ -294,7 +294,7 @@ void UFPrivatelyHttpServer::ProcessHttpRequest(const FString& Request)
                 SendResponse(Response);
             }
         }
-        else if (URL.StartsWith(TEXT("validate-adult")))
+        else if (URL.StartsWith(TEXT("validate-age")))
         {
             int index = 0;
             if (URL.FindChar('?', index))
@@ -304,14 +304,18 @@ void UFPrivatelyHttpServer::ProcessHttpRequest(const FString& Request)
             TArray<FString> Params;
             URL.ParseIntoArray(Params, TEXT("&"));
 
-            FString IsAdult, Passcode;
+            FString MinAge, MaxAge, Passcode;
 
             for (const FString& Param : Params)
             {
-                Log(TEXT("validate-adult: ") + Param);
-                if (Param.StartsWith(TEXT("isAdult=")))
+                Log(TEXT("validate-age: ") + Param);
+                if (Param.StartsWith(TEXT("minAge=")))
                 {
-                    IsAdult = Param.Mid(8);
+                    MinAge = Param.Mid(7);
+                }
+                else if (Param.StartsWith(TEXT("maxAge=")))
+                {
+                    MaxAge = Param.Mid(7);
                 }
                 else if (Param.StartsWith(TEXT("passcode=")))
                 {
@@ -324,15 +328,18 @@ void UFPrivatelyHttpServer::ProcessHttpRequest(const FString& Request)
             if (bIsValid && !bPasscodeUsed)
             {
                 bPasscodeUsed = true;
-                if (ValidateAdultCallback)
+                if (AgeValidationCallback)
                 {
                     Log(TEXT("Passcode matched = ") + Passcode);
-                    Log(TEXT("IsAdult = ") + IsAdult);
-                    bool bIsAdult = IsAdult == TEXT("true");
+                    Log(TEXT("success = true "));
+                    Log(TEXT("minAge = ") + MinAge);
+                    Log(TEXT("maxAge = ") + MaxAge);
+                    int32 Min = FCString::Atoi(*MinAge);
+                    int32 Max = FCString::Atoi(*MaxAge);
                     // Invoke on the main thread
-                    AsyncTask(ENamedThreads::GameThread, [this, bIsAdult]()
+                    AsyncTask(ENamedThreads::GameThread, [this, Min, Max]()
                     {
-                        ValidateAdultCallback(bIsAdult);
+                        AgeValidationCallback(true, Min, Max);
                     });
 
                 }

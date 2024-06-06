@@ -21,7 +21,7 @@ public:
     bool StartServer(int32 Port);
     void StopServer();
 
-    void Initialize(TFunction<void(bool)> InValidateAdultCallback);
+    void Initialize(TFunction<void(bool, int32, int32)> InAgeValidationCallback);
 
 private:
     FSocket* ListenerSocket;
@@ -31,7 +31,7 @@ private:
     FString InitialPasscode;
     FString StoredFuturePasscode;
     bool bPasscodeUsed = false;
-    TFunction<void(bool)> ValidateAdultCallback;
+    TFunction<void(bool, int32, int32)> AgeValidationCallback;
     FString PrivatelyURL;
 
     // Internal runnable delegate

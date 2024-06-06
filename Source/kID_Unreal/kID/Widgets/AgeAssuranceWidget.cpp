@@ -6,9 +6,9 @@
 #include "Misc/FileHelper.h"
 #include "HAL/PlatformProcess.h"
 
-void UAgeAssuranceWidget::InitializeWidget(const FString& DateOfBirth, TFunction<void(bool)> InCallback)
+void UAgeAssuranceWidget::InitializeWidget(int32 InAge, TFunction<void(bool, int32, int32)> InCallback)
 {
-    int32 Age = CalculateAgeFromDOB(DateOfBirth);
+    Age = InAge;
     if (VerificationText)
     {
         FText VerificationTextContent = VerificationText->GetText();
@@ -33,74 +33,22 @@ void UAgeAssuranceWidget::InitializeWidget(const FString& DateOfBirth, TFunction
 void UAgeAssuranceWidget::OnYesClicked()
 {
     StopHttpServer();
-    Callback(true);
+    Callback(true, Age, Age);
     RemoveFromParent();
 }
 
 void UAgeAssuranceWidget::OnNoClicked()
 {
     StopHttpServer();
-    Callback(false);
+    Callback(false, 0, 0);
     RemoveFromParent();
-}
-
-int32 UAgeAssuranceWidget::CalculateAgeFromDOB(const FString& DateOfBirth)
-{
-    FDateTime DOB;
-    if (FDateTime::Parse(DateOfBirth, DOB))
-    {
-        FDateTime Now = FDateTime::UtcNow();
-        int32 Age = Now.GetYear() - DOB.GetYear();
-        if (Now.GetMonth() < DOB.GetMonth() || (Now.GetMonth() == DOB.GetMonth() && Now.GetDay() < DOB.GetDay()))
-        {
-            Age--;
-        }
-        return Age;
-    }
-    else if (FDateTime::ParseIso8601(*DateOfBirth, DOB)) // Handles YYYY-MM-DD format
-    {
-        FDateTime Now = FDateTime::UtcNow();
-        int32 Age = Now.GetYear() - DOB.GetYear();
-        if (Now.GetMonth() < DOB.GetMonth() || (Now.GetMonth() == DOB.GetMonth() && Now.GetDay() < DOB.GetDay()))
-        {
-            Age--;
-        }
-        return Age;
-    }
-    else
-    {
-        // Handle the case where only the year is provided (YYYY)
-        int32 Year;
-        if (LexTryParseString(Year, *DateOfBirth))
-        {
-            FDateTime Now = FDateTime::UtcNow();
-            return Now.GetYear() - Year;
-        }
-    }
-    return 0; // Invalid date format
 }
 
 void UAgeAssuranceWidget::StartHttpServer()
 {
     // Create and start the HTTP server
     HttpServer = NewObject<UFPrivatelyHttpServer>();
-    HttpServer->Initialize([this](bool bIsValid)
-    {
-        if (bIsValid)
-        {
-            UE_LOG(LogTemp, Log, TEXT("Adult validation successful"));
-        }
-        else
-        {
-            UE_LOG(LogTemp, Log, TEXT("Adult validation failed"));
-        }
-
-        // Invoke the callback
-        if (Callback)
-        {
-            Callback(bIsValid);
-        }
-    });
+    HttpServer->Initialize(Callback);
 
     if (HttpServer->StartServer(8080))
     {

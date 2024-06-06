@@ -107,19 +107,30 @@ void UKidWorkflow::StartKidSession(const FString& Location)
             if (ageGateShown) {
                 if (bAgeAssuranceRequired)
                 {
-                    ValidateAge(DOB, [this, Location, DOB](bool bValidated)
+                    int32 Age = CalculateAgeFromDOB(DOB);
+                    ValidateAge(Age, [this, Location, DOB, Age](bool successful, int minAge, int maxAge)
                     {
-                        DismissAgeAssuranceWidget();
-                        if (bValidated)
-                        {
-                            UE_LOG(LogTemp, Log, TEXT("Age successfully validated!"));
-                            StartKidSessionWithDOB(Location, DOB);
+                        if (successful) {
+                            DismissAgeAssuranceWidget();
+                            if (Age <= maxAge)
+                            {
+                                UE_LOG(LogTemp, Log, TEXT("Age successfully validated!"));
+                                StartKidSessionWithDOB(Location, DOB);
+                            }
+                            else
+                            {
+                                // using the minimum age as the default DOB 
+                                int32 DOBYear = FDateTime::Now().GetYear() - minAge;
+                                UE_LOG(LogTemp, Warning, TEXT("%s%s"),
+                                    TEXT("Player's age appears to be less than what was given. "), 
+                                    TEXT("Using %d as the birth year."), DOBYear);
+                                StartKidSessionWithDOB(Location, FString::FromInt(DOBYear));
+                            }
                         }
                         else
                         {
-                            UE_LOG(LogTemp, Warning, 
-                                TEXT("Player's age could not be verified.  Challenge for someone born in 2014."));
-                            StartKidSessionWithDOB(Location, TEXT("2014"));
+                            UE_LOG(LogTemp, Warning, TEXT("Age validation failed."));
+                            HandleProhibitedStatus();
                         }
                     });
                 }
@@ -273,10 +284,10 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
     });
 }
 
-void UKidWorkflow::ValidateAge(const FString& DOB, TFunction<void(bool)> Callback)
+void UKidWorkflow::ValidateAge(int32 Age, TFunction<void(bool, int32 minAge, int32 maxAge)> Callback)
 {
     UE_LOG(LogTemp, Log, TEXT("Validating age..."));
-    ShowAgeAssuranceWidget(DOB, Callback);
+    ShowAgeAssuranceWidget(Age, Callback);
 }
 
 void UKidWorkflow::GetDefaultPermissions(const FString& Location)
@@ -565,6 +576,42 @@ void UKidWorkflow::SetChallengeStatus(const FString& Location)
    });
 }
 
+int32 UKidWorkflow::CalculateAgeFromDOB(const FString& DateOfBirth)
+{
+    FDateTime DOB;
+    if (FDateTime::Parse(DateOfBirth, DOB))
+    {
+        FDateTime Now = FDateTime::UtcNow();
+        int32 Age = Now.GetYear() - DOB.GetYear();
+        if (Now.GetMonth() < DOB.GetMonth() || (Now.GetMonth() == DOB.GetMonth() && Now.GetDay() < DOB.GetDay()))
+        {
+            Age--;
+        }
+        return Age;
+    }
+    else if (FDateTime::ParseIso8601(*DateOfBirth, DOB)) // Handles YYYY-MM-DD format
+    {
+        FDateTime Now = FDateTime::UtcNow();
+        int32 Age = Now.GetYear() - DOB.GetYear();
+        if (Now.GetMonth() < DOB.GetMonth() || (Now.GetMonth() == DOB.GetMonth() && Now.GetDay() < DOB.GetDay()))
+        {
+            Age--;
+        }
+        return Age;
+    }
+    else
+    {
+        // Handle the case where only the year is provided (YYYY)
+        int32 Year;
+        if (LexTryParseString(Year, *DateOfBirth))
+        {
+            FDateTime Now = FDateTime::UtcNow();
+            return Now.GetYear() - Year;
+        }
+    }
+    return 0; // Invalid date format
+}
+
 void UKidWorkflow::HandleProhibitedStatus()
 {
     UE_LOG(LogTemp, Warning, TEXT("Player does not meet the minimum age requirement. Play is disabled."));
@@ -800,7 +847,7 @@ void UKidWorkflow::ShowFloatingChallengeWidget(const FString& OTP, const FString
     }
 }
 
-void UKidWorkflow::ShowAgeAssuranceWidget(const FString& DateOfBirth, TFunction<void(bool)> OnAssuranceResponse)
+void UKidWorkflow::ShowAgeAssuranceWidget(int32 Age, TFunction<void(bool, int32, int32)> OnAssuranceResponse)
 {
     if (GEngine && GEngine->GameViewport)
     {
@@ -810,7 +857,7 @@ void UKidWorkflow::ShowAgeAssuranceWidget(const FString& DateOfBirth, TFunction<
             AgeAssuranceWidget = CreateWidget<UAgeAssuranceWidget>(GEngine->GameViewport->GetWorld(), AgeAssuranceWidgetClass);
             if (AgeAssuranceWidget)
             {
-                AgeAssuranceWidget->InitializeWidget(DateOfBirth, OnAssuranceResponse);
+                AgeAssuranceWidget->InitializeWidget(Age, OnAssuranceResponse);
                 AgeAssuranceWidget->AddToViewport();
             }
         }

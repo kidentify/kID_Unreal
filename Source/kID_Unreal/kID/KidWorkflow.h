@@ -30,7 +30,7 @@ public:
     void HandleExistingChallenge(const FString& ChallengeId);
     void StartKidSessionWithDOB(const FString& Location, const FString& DOB);
     void GetUserAge(const FString& Location, TFunction<void(bool, bool, const FString&)> Callback);
-    void ValidateAge(const FString& DOB, TFunction<void(bool)> Callback);
+    void ValidateAge(int32 Age, TFunction<void(bool, int32, int32)> Callback);
     void GetDefaultPermissions(const FString& Location);
     void ShowConsentChallenge(const FString& ChallengeId, int32 Timeout, const FString& OTP, const FString& QRCodeUrl, 
                             TFunction<void(bool, const FString&)> OnConsentGranted);
@@ -40,6 +40,8 @@ public:
                             
     void HandleProhibitedStatus();
     void HandleNoConsent();
+
+    int32 CalculateAgeFromDOB(const FString& DateOfBirth);
 
     // Use the test/set-challenge-status API for testing consent challenges
     void SetChallengeStatus(const FString& Location);
@@ -65,7 +67,7 @@ public:
     void ShowAgeGate(TFunction<void(const FString&)> Callback);
     void ShowTestSetChallengeWidget(TFunction<void(const FString&, const FString&)> Callback);
 
-    void ShowAgeAssuranceWidget(const FString& DateOfBirth, TFunction<void(bool)> OnAssuranceResponse);
+    void ShowAgeAssuranceWidget(int32 Age, TFunction<void(bool, int32, int32)> OnAssuranceResponse);
     void DismissAgeAssuranceWidget();
 
     void ShowFloatingChallengeWidget(const FString& OTP, const FString& QRCodeUrl, TFunction<void(const FString&)> OnEmailSubmitted);
