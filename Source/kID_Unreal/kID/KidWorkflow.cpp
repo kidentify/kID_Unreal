@@ -283,9 +283,11 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
 
                 if (bShouldDisplay)
                 {
-                    ShowAgeGate(Methods, [Callback, bAgeAssuranceRequired](const FString& DOB)
+                    ShowAgeGate(Methods, [this, DigitalConsentAge, Callback, bAgeAssuranceRequired](const FString& DOB)
                     {
-                        Callback(true, bAgeAssuranceRequired, DOB);
+                        // Only verify ages higher than the digital consent age
+                        int32 Age = CalculateAgeFromDOB(DOB);
+                        Callback(true, bAgeAssuranceRequired && Age >= DigitalConsentAge, DOB);
                     });
                 } 
                 else 
@@ -777,7 +779,7 @@ void UKidWorkflow::ShowAgeGate(TSet<FString> AllowedAgeGateMethods, TFunction<vo
     {
         if (AllowedAgeGateMethods.Contains(TEXT("age-slider")))
         {
-            UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_SliderAgeGateWidget.BP_SliderAgeGateWidget_C"));  
+            UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_SliderAgeGateWidget.BP_SliderAgeGateWidget_C"));  
             if (AgeGateWidgetClass)
             {
                 USliderAgeGateWidget* Widget = CreateWidget<USliderAgeGateWidget>(GEngine->GameViewport->GetWorld(), AgeGateWidgetClass);
@@ -791,7 +793,7 @@ void UKidWorkflow::ShowAgeGate(TSet<FString> AllowedAgeGateMethods, TFunction<vo
         } 
         else
         {
-            UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_AgeGateWidget.BP_AgeGateWidget_C"));
+            UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_AgeGateWidget.BP_AgeGateWidget_C"));
             if (AgeGateWidgetClass)
             {
                 UAgeGateWidget* Widget = CreateWidget<UAgeGateWidget>(GEngine->GameViewport->GetWorld(), AgeGateWidgetClass);
@@ -810,7 +812,7 @@ void UKidWorkflow::ShowTestSetChallengeWidget(TFunction<void(const FString&, con
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* TestSetChallengeWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_TestSetChallengeWidget.BP_TestSetChallengeWidget_C"));
+        UClass* TestSetChallengeWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_TestSetChallengeWidget.BP_TestSetChallengeWidget_C"));
         if (TestSetChallengeWidgetClass)
         {
             UTestSetChallengeWidget* TestSetChallengeWidget = CreateWidget<UTestSetChallengeWidget>(GEngine->GameViewport->GetWorld(), TestSetChallengeWidgetClass);
@@ -827,7 +829,7 @@ void UKidWorkflow::ShowDemoControls()
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* DemoControlsClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_DemoControlsWidget.BP_DemoControlsWidget_C"));
+        UClass* DemoControlsClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_DemoControlsWidget.BP_DemoControlsWidget_C"));
         if (DemoControlsClass)
         {
             DemoControlsWidget = CreateWidget<UDemoControlsWidget>(GEngine->GameViewport->GetWorld(), DemoControlsClass);
@@ -848,7 +850,7 @@ void UKidWorkflow::ShowPlayerHUD()
         if (!PlayerHUDWidget)
         {
             // Load the widget blueprint dynamically
-            UClass* HUDWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_PlayerHUDWidget.BP_PlayerHUDWidget_C"));
+            UClass* HUDWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_PlayerHUDWidget.BP_PlayerHUDWidget_C"));
             if (HUDWidgetClass)
             {
                 PlayerHUDWidget = Cast<UPlayerHUDWidget>(CreateWidget<UUserWidget>(GEngine->GameViewport->GetWorld(), HUDWidgetClass));
@@ -868,7 +870,7 @@ void UKidWorkflow::ShowFloatingChallengeWidget(const FString& OTP, const FString
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* FloatingChallengeWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_FloatingChallengeWidget.BP_FloatingChallengeWidget_C"));
+        UClass* FloatingChallengeWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_FloatingChallengeWidget.BP_FloatingChallengeWidget_C"));
         if (FloatingChallengeWidgetClass)
         {
             FloatingChallengeWidget = CreateWidget<UFloatingChallengeWidget>(GEngine->GameViewport->GetWorld(), FloatingChallengeWidgetClass);
@@ -886,7 +888,7 @@ void UKidWorkflow::ShowAgeAssuranceWidget(int32 Age, TFunction<void(bool, int32,
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* AgeAssuranceWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_AgeAssuranceWidget.BP_AgeAssuranceWidget_C"));
+        UClass* AgeAssuranceWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_AgeAssuranceWidget.BP_AgeAssuranceWidget_C"));
         if (AgeAssuranceWidgetClass)
         {
             AgeAssuranceWidget = CreateWidget<UAgeAssuranceWidget>(GEngine->GameViewport->GetWorld(), AgeAssuranceWidgetClass);
@@ -903,7 +905,7 @@ void UKidWorkflow::ShowUnavailableWidget()
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* UnavailableWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_UnavailableWidget.BP_UnavailableWidget_C"));
+        UClass* UnavailableWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_UnavailableWidget.BP_UnavailableWidget_C"));
         if (UnavailableWidgetClass)
         {
             UUnavailableWidget* UnavailableWidget = CreateWidget<UUnavailableWidget>(GEngine->GameViewport->GetWorld(), UnavailableWidgetClass);

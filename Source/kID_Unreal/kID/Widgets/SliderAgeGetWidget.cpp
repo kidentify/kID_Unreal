@@ -20,7 +20,7 @@ void USliderAgeGateWidget::OnSubmitClicked()
     float Age = AgeSlider->GetValue();
     RemoveFromParent();
     FDateTime Now = FDateTime::UtcNow();
-    FDateTime DateOfBirth = Now - FTimespan::FromDays(Age * 365.25);
+    FDateTime DateOfBirth = Now - FTimespan::FromDays(Age * 365.25 + 1);
     FString DateOfBirthString = DateOfBirth.ToString(TEXT("%Y-%m-%d"));
     Callback(DateOfBirthString);
 } 
