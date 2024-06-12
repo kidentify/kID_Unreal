@@ -81,3 +81,4 @@ Plugins/*/Intermediate/*
 DerivedDataCache/*
 *.log
 privately.json
+.DS_Store

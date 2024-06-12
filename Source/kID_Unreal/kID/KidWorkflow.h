@@ -4,7 +4,6 @@
 #include "UObject/NoExportTypes.h"
 #include "Widgets/PlayerHUDWidget.h"
 #include "Widgets/FloatingChallengeWidget.h"
-#include "Widgets/AgeGateWidget.h"
 #include "Widgets/UnavailableWidget.h"
 #include "Widgets/DemoControlsWidget.h"
 #include "Widgets/AgeAssuranceWidget.h"
@@ -64,7 +63,7 @@ public:
 
      // UI Elements
     void ShowUnavailableWidget();
-    void ShowAgeGate(TFunction<void(const FString&)> Callback);
+    void ShowAgeGate(TSet<FString> allowedAgeGateMethods, TFunction<void(const FString&)> Callback);
     void ShowTestSetChallengeWidget(TFunction<void(const FString&, const FString&)> Callback);
 
     void ShowAgeAssuranceWidget(int32 Age, TFunction<void(bool, int32, int32)> OnAssuranceResponse);
@@ -99,7 +98,7 @@ private:
     UAgeAssuranceWidget* AgeAssuranceWidget;
 
     UPROPERTY()
-    UAgeGateWidget* AgeGateWidget;
+    UWidget* AgeGateWidget;
 
     UPROPERTY()
     UPlayerHUDWidget* PlayerHUDWidget;

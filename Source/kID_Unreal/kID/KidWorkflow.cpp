@@ -18,6 +18,8 @@
 #include "Engine/GameViewportClient.h"
 #include "Widgets/DemoControlsWidget.h"
 #include "Widgets/TestSetChallengeWidget.h"
+#include "Widgets/SliderAgeGateWidget.h"
+#include "Widgets/AgeGateWidget.h"
 
 // Constants
 const FString BaseUrl = TEXT("https://game-api.k-id.com/api/v1"); 
@@ -249,13 +251,13 @@ void UKidWorkflow::StartKidSessionWithDOB(const FString& Location, const FString
 
 void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool, const FString&)> Callback)
 {
-    FString Url = BaseUrl + TEXT("/age-gate/should-display?jurisdiction=") + Location;
+    FString Url = BaseUrl + TEXT("/age-gate/get-requirements?jurisdiction=") + Location;
 
     HttpRequestHelper::GetRequestWithAuth(Url, AuthToken, [this, Location, Callback](FHttpResponsePtr Response, bool bWasSuccessful)
     {
         if (bWasSuccessful && Response.IsValid())
         {
-            UE_LOG(LogTemp, Log, TEXT("Call to /age-gate/should-display succeeded: %s"), *Response->GetContentAsString());
+            UE_LOG(LogTemp, Log, TEXT("Call to /age-gate/get-requirements succeeded: %s"), *Response->GetContentAsString());
 
             TSharedPtr<FJsonObject> JsonResponse;
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
@@ -264,9 +266,24 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
                 bool bShouldDisplay = JsonResponse->GetBoolField(TEXT("shouldDisplay"));
                 bool bAgeAssuranceRequired = JsonResponse->GetBoolField(TEXT("ageAssuranceRequired"));
 
+                // Extracting extra information about the jurisdiction.  Not used below. 
+                // Can be used to further customize the age gate.
+                int32 DigitalConsentAge = JsonResponse->GetIntegerField(TEXT("digitalConsentAge"));
+                int32 CivilAge = JsonResponse->GetIntegerField(TEXT("civilAge"));
+                int32 MinimumAge = JsonResponse->GetIntegerField(TEXT("minimumAge"));
+
+                // Extracting methods array
+                const TArray<TSharedPtr<FJsonValue>>& ApprovedAgeCollectionMethods = JsonResponse->GetArrayField(TEXT("approvedAgeCollectionMethods"));
+
+                TSet<FString> Methods;
+                for (const TSharedPtr<FJsonValue>& Value : ApprovedAgeCollectionMethods)
+                {
+                    Methods.Add(Value->AsString());
+                }
+
                 if (bShouldDisplay)
                 {
-                    ShowAgeGate([Callback, bAgeAssuranceRequired](const FString& DOB)
+                    ShowAgeGate(Methods, [Callback, bAgeAssuranceRequired](const FString& DOB)
                     {
                         Callback(true, bAgeAssuranceRequired, DOB);
                     });
@@ -754,20 +771,38 @@ void UKidWorkflow::UpdateHUDText()
     }
 }
 
-void UKidWorkflow::ShowAgeGate(TFunction<void(const FString&)> Callback)
+void UKidWorkflow::ShowAgeGate(TSet<FString> AllowedAgeGateMethods, TFunction<void(const FString&)> Callback)
 {
     if (GEngine && GEngine->GameViewport)
     {
-        UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_AgeGateWidget.BP_AgeGateWidget_C"));
-        if (AgeGateWidgetClass)
+        if (AllowedAgeGateMethods.Contains(TEXT("age-slider")))
         {
-            AgeGateWidget = CreateWidget<UAgeGateWidget>(GEngine->GameViewport->GetWorld(), AgeGateWidgetClass);
-            if (AgeGateWidget)
+            UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_SliderAgeGateWidget.BP_SliderAgeGateWidget_C"));  
+            if (AgeGateWidgetClass)
             {
-                AgeGateWidget->InitializeWidget(Callback);
-                AgeGateWidget->AddToViewport();
+                USliderAgeGateWidget* Widget = CreateWidget<USliderAgeGateWidget>(GEngine->GameViewport->GetWorld(), AgeGateWidgetClass);
+                AgeGateWidget = Widget;
+                if (AgeGateWidget)
+                {
+                    Widget->InitializeWidget(Callback);
+                    Widget->AddToViewport();
+                }
             }
-        }
+        } 
+        else
+        {
+            UClass* AgeGateWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/FirstPerson/Blueprints/kID/BP_AgeGateWidget.BP_AgeGateWidget_C"));
+            if (AgeGateWidgetClass)
+            {
+                UAgeGateWidget* Widget = CreateWidget<UAgeGateWidget>(GEngine->GameViewport->GetWorld(), AgeGateWidgetClass);
+                AgeGateWidget = Widget;
+                if (AgeGateWidget)
+                {
+                    Widget->InitializeWidget(Callback);
+                    Widget->AddToViewport();
+                }
+            }
+         }
     }
 }
 
