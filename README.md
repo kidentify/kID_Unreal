@@ -17,7 +17,13 @@ This demo uses the First Person Template from Unreal 5, and was built using Unre
 - Click the Play button in Unreal to enter Play In Editor mode
 
 ## Using the Demo
-Enter a valid location (e.g. US-CA, GB, etc.) into the location field at the lower left, and click Start Session.  If this location requires an age gate, then an age gate is shown.  If the jurisdiction requires parental consent for certain game features at a certain age, and the player is under this age, then a parental consent challenge is shown, and the challenge ID will be show in the HUD.  If an email is submitted from the challenge window, then the generated email will contain a link to the kID parent portal.  The QR code will also lead parents to the same location.  There you can validate that you are a parent (a Legal Adult), and can grant permission to the child to play the game.  If the player provided a date of birth of a legal adult in a jurisdiction that requires age assurance, then an age assurance dialog will be shown.  After this, if the player is a legal adult and has passed age assurance where necessary, or, consent is granted by the parent, then a new kID session starts, and the session ID will be visible in the HUD.  From then on, only session refreshes will happen after restarting the game, or until the Clear Session button is pressed to clear the previous state.  
+Enter a valid location (e.g. US-CA, GB, etc.) into the location field at the lower left, and click Start Session.  If this location requires an age gate, then an age gate will be shown.  If the jurisdiction requires parental consent for certain game features at a certain age, and the player is under this age, then a parental consent challenge is shown, and the challenge ID will be displayed in the HUD.  
+
+From the consent challenge window, if an email address is submitted, then a generated email will be sent to that address that contains a link to the kID parent portal.  The QR code will also lead parents to the same location.  There you can validate that you are a parent (a Legal Adult), and can grant permission to the child to play the game.  
+
+If the player provided a date of birth of a legal adult in a jurisdiction that requires age assurance (e.g. GB), then an age assurance dialog will be shown.  
+
+After this, if the player is a legal adult and has passed age assurance where necessary, or consent has been granted by the parent, then a new kID session starts, and the session ID will be visible in the HUD.  From then on, only session refreshes will happen after restarting the game, or until the Clear Session button is pressed to clear the previous state.  
 
 While the challenge window is showing, a Set Challenge Status button appears at the bottom of the screen.  If this is clicked, it is possible to simulate consent, or rejection of consent in the window that appears.  This is using the `test/set-challenge-status` API and is only for demo purposes.
 
@@ -43,6 +49,8 @@ There are 7 widgets implemented as Unreal Blueprints that can be customized.  Ea
 Integration to Privately using an external web browser is available in this demo.  To enable, you will require valid Privately credentials in a file called privately.json that you should create at the root of the project folder.  The format of this file is:
 
 `{ "session_id": "<privately session id>", "session_password": "privately session password"}`
+
+In order to trigger age estimation using Privately facial scanning, the jurisdiction you provide must be one that requires age assurance.  An example location that will trigger age assurance is `GB`.
 
 ### QR-Code-generator
 Source from an external QR Code generator C++ library called [QR-Code-generator](https://github.com/nayuki/QR-Code-generator) is included in this repo for convenience, but any QR code generation approach can be used as long as it can create a bitmap that can be placed in the 2D Texture in the `FloatingChallengeWidget` class.  
