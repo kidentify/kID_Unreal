@@ -1,9 +1,10 @@
 # kID_Unreal
- Unreal Demo of kID
+## Unreal Demo of kID
 
-This demo uses the First Person Template from Unreal 5, and was built using Unreal 5.4.1.  The demo goes through various k-ID workflows as described in the [k-ID Developer Guide](https://docs.google.com/document/d/12J5mkFZvE8LC6aUsSwuxUvuONAsYrQ0aR1yPdJOXrPE/edit#heading=h.a4uiiic96g9p).  
-
-![Screenshot 2024-06-04 at 4 51 31 PM](https://github.com/kidentify/kID_Unreal/assets/3493285/71b04185-097c-4ffa-aae3-7857fea87586)
+The demo goes through various k-ID workflows as described in the [k-ID Developer Guide](https://docs.google.com/document/d/12J5mkFZvE8LC6aUsSwuxUvuONAsYrQ0aR1yPdJOXrPE/edit#heading=h.a4uiiic96g9p).  This demo leverages the First Person Template from Unreal 5, and was built using Unreal 5.4.1.  
+<p align="center">
+ <img src="https://github.com/kidentify/kID_Unreal/assets/3493285/71b04185-097c-4ffa-aae3-7857fea87586" />
+</p>
 
 ## Installation
 - Clone the repo locally
@@ -15,6 +16,12 @@ This demo uses the First Person Template from Unreal 5, and was built using Unre
      - **Warning: Do not deploy an API Key in your Unreal binary.  API keys should always be hidden on the server in a real-world implementation to avoid misuse.**
 - If you will integrating Privately, see the instructions in the Dependencies section below
 - Click the Play button in Unreal to enter Play In Editor mode
+
+## Overview
+k_ID implements a comprehensive compliance workflow depicted in the diagram below:
+![image](https://github.com/kidentify/kID_Unreal/assets/3493285/138ded07-360d-4265-b841-5fcc50ba88f8)
+
+The demo provides a sample implementation of this flow chart.
 
 ## Using the Demo
 Enter a valid location (e.g. US-CA, GB, etc.) into the location field at the lower left, and click Start Session.  If this location requires an age gate, then an age gate will be shown.  If the jurisdiction requires parental consent for certain game features at a certain age, and the player is under this age, then a parental consent challenge is shown, and the challenge ID will be displayed in the HUD.  
@@ -34,10 +41,11 @@ The First Person Unreal sample is unchanged except for integration to k-ID on st
 
 All source code that implements kID workflows resides in the [kID](Source/kID_Unreal/kID) folder.  All of the logic for kID flows is in the [KidWorkflow.cpp](Source/kID_Unreal/kID/KidWorkflow.cpp) class.  
 
-There are 7 widgets implemented as Unreal Blueprints that can be customized.  Each is in the [Content/FirstPerson/Blueprints/kID](Content/FirstPerson/Blueprints/kID) directory, and can be found and opened from the Content Drawer in Unreal.  The supporting C++ classes are:
+There are 8 widgets implemented as Unreal Blueprints that can be customized.  Each is in the [Content/FirstPerson/Blueprints/kID](Content/kID/Blueprints) directory, and can be found and opened from the Content Drawer in Unreal.  The supporting C++ classes are:
 - [PlayerHUDWidget.cpp](Source/kID_Unreal/kID/Widgets/PlayerHUDWidget.cpp): Displays information about the current age status, session id, and challenge id.
 - [DemoControlsWidget.cpp](Source/kID_Unreal/kID/Widgets/DemoControlsWidget.cpp): Displays the location field and a submit button as well as the Clear Session button.
-- [AgeGateWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeGateWidget.cpp): Displays the age gate.
+- [AgeGateWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeGateWidget.cpp): Displays an age gate that requests date of birth.
+- [SliderAgeGateWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeGateWidget.cpp): Displays an age gate that uses a slider to select age in years.
 - [FloatingChallengeWidget.cpp](Source/kID_Unreal/kID/Widgets/FloatingChallengeWidget.cpp): Displays the challenge screen to get parent consent, including the generated QR code.
 - [UnavailableWidget.cpp](Source/kID_Unreal/kID/Widgets/UnavailableWidget.cpp): Blocks play when a player fails the consent challenge or is below the minimum age to play the game. 
 - [TestSetChallengeWidget.cpp](Source/kID_Unreal/kID/Widgets/TestSetChallengeWidget.cpp): Calls the `test/set-challenge-status` API to simulate consent for testing purposes. 
