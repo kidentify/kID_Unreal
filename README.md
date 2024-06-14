@@ -18,7 +18,7 @@ The demo goes through various k-ID workflows as described in the [k-ID Developer
 - Click the Play button in Unreal to enter Play In Editor mode
 
 ## Overview
-k_ID implements a comprehensive compliance workflow depicted in the diagram below:
+The k-ID Engine implements a comprehensive compliance workflow depicted in the diagram below:
 ![image](https://github.com/kidentify/kID_Unreal/assets/3493285/138ded07-360d-4265-b841-5fcc50ba88f8)
 
 The demo provides a sample implementation of this flow chart.
