@@ -23,8 +23,8 @@
         let failFaceScan = FAIL_FACE_SCAN;
         let futurePasscode = Math.floor(100000 + Math.random() * 900000).toString();
 
-        function validateAge(minAge, maxAge) {
-            let url = `http://localhost:8080/validate-age?minAge=${minAge}&maxAge=${maxAge}&passcode=${futurePasscode}`;
+        function validateAge(minAge, maxAge, status) {
+            let url = `http://localhost:8080/validate-age?minAge=${minAge}&maxAge=${maxAge}&status=${status}&passcode=${futurePasscode}`;
             fetch(url)
                 .then(response => response.text())
                 .then(data => {
@@ -41,29 +41,24 @@
                 .then(data => {
                     console.log('Auth response from server:', data);
                     if (!useFaceScan) {
-                        validateAdult(!failFaceScan);
+                        validateAge(!failFaceScan);
                     }
                 })
                 .catch(error => console.error('Auth error:', error));
         }
 
         window.addEventListener('message', function(e) { 
-            // Get the sent data 
-            const data = e.data; 
-            console.log(data); 
+            console.log(e.data); 
 
-            var t = JSON.parse(data); 
-            var age_identified = t["age_identified"];
-            if (age_identified.slice(0,2) >= 25) { 
-                // User verified above 25 
-                validateAge(25, 100);
-            } else if (age_identified.slice(0,2) >= 18) { 
-                // User between 18 and 24 - needs extra verification step 
-                validateAge(18, 24);
-            } else { 
-                // User below 18 
-                validateAge(0, 17);
-            } 
+            try {
+                var t = JSON.parse(e.data); 
+                var minAge = t["minAge"];
+                var maxAge = t["maxAge"];
+                var status = t["status"];
+                validateAge(minAge, maxAge, status);
+            } catch (e) {
+                console.log('Error parsing JSON data: ', e); 
+            }
         });
     </script>
 </body>

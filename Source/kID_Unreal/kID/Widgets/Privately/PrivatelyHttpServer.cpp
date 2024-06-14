@@ -16,10 +16,15 @@
 
 // useful for httpserver debugging in the editor
 static bool LogToFile = false;
+
 // useful to avoid the face scan for round trip testing in the browser
 static bool UseFaceScan = true;
-// useful to testface scan failure
+
+// useful to test face scan failure by forcing a failure in the browser.  UseFaceScan needs 
+// to be set to true for this to have an effect.
 static bool FailFaceScan = false;
+
+static FString PrivatelyBaseURL = TEXT("https://d3ogqhtsivkon3.cloudfront.net/?");
 
 UFPrivatelyHttpServer::UFPrivatelyHttpServer()
     : ListenerSocket(nullptr), ServerThread(nullptr), bStopThread(false)
@@ -60,11 +65,14 @@ bool UFPrivatelyHttpServer::StartServer(int32 Port)
             FString SessionId = JsonObject->GetStringField(TEXT("session_id"));
             FString SessionPassword = JsonObject->GetStringField(TEXT("session_password"));
 
-            FString BaseURL = TEXT("https://showroom-demo.privately.swiss/video_age_verification?useSpoof=false");
-            PrivatelyURL = BaseURL + TEXT("&session_id=") + 
+            PrivatelyURL = PrivatelyBaseURL + TEXT("session_id=") + 
                     FGenericPlatformHttp::UrlEncode(SessionId) + 
                     TEXT("&session_password=") + 
                     FGenericPlatformHttp::UrlEncode(SessionPassword);
+            
+            FTimespan UnixTimeSpan = FDateTime::UtcNow() - FDateTime::FromUnixTimestamp(0);
+            int64 TimestampInSeconds = UnixTimeSpan.GetTotalSeconds();
+            PrivatelyURL+= TEXT("&timestamp=") + FString::FromInt(TimestampInSeconds);
 
             UE_LOG(LogTemp, Log, TEXT("Constructed Privately URL: %s"), *PrivatelyURL);
         }
@@ -304,7 +312,7 @@ void UFPrivatelyHttpServer::ProcessHttpRequest(const FString& Request)
             TArray<FString> Params;
             URL.ParseIntoArray(Params, TEXT("&"));
 
-            FString MinAge, MaxAge, Passcode;
+            FString MinAge, MaxAge, Passcode, Status;
 
             for (const FString& Param : Params)
             {
@@ -316,6 +324,10 @@ void UFPrivatelyHttpServer::ProcessHttpRequest(const FString& Request)
                 else if (Param.StartsWith(TEXT("maxAge=")))
                 {
                     MaxAge = Param.Mid(7);
+                }
+                else if (Param.StartsWith(TEXT("status=")))
+                {
+                    Status = Param.Mid(7);
                 }
                 else if (Param.StartsWith(TEXT("passcode=")))
                 {
@@ -331,17 +343,25 @@ void UFPrivatelyHttpServer::ProcessHttpRequest(const FString& Request)
                 if (AgeValidationCallback)
                 {
                     Log(TEXT("Passcode matched = ") + Passcode);
-                    Log(TEXT("success = true "));
-                    Log(TEXT("minAge = ") + MinAge);
-                    Log(TEXT("maxAge = ") + MaxAge);
-                    int32 Min = FCString::Atoi(*MinAge);
-                    int32 Max = FCString::Atoi(*MaxAge);
-                    // Invoke on the main thread
-                    AsyncTask(ENamedThreads::GameThread, [this, Min, Max]()
+                    if (Status == TEXT("AGE_CHECK_COMPLETE"))
                     {
-                        AgeValidationCallback(true, Min, Max);
-                    });
-
+                        // Invoke on the main thread
+                        Log(TEXT("minAge = ") + MinAge);
+                        Log(TEXT("maxAge = ") + MaxAge);
+                        int32 Min = FCString::Atoi(*MinAge);
+                        int32 Max = FCString::Atoi(*MaxAge);
+                        AsyncTask(ENamedThreads::GameThread, [this, Min, Max]()
+                        {
+                            AgeValidationCallback(true, Min, Max);
+                        });
+                    }
+                    else
+                    {
+                        AsyncTask(ENamedThreads::GameThread, [this]()
+                        {
+                            AgeValidationCallback(false, 0, 0);
+                        });
+                    }
                 }
                 FString Response = TEXT("HTTP/1.1 200 OK\r\n");
                 Response += TEXT("Content-Type: text/html\r\n");
@@ -395,7 +415,9 @@ bool UFPrivatelyHttpServer::IsBrowserSupported()
 {
     FString DefaultBrowser = GetDefaultBrowser(TEXT("https://google.com"));
     Log(TEXT("Default browser: ") + DefaultBrowser);
-    return DefaultBrowser.Contains(TEXT("Google Chrome")) || DefaultBrowser.Contains(TEXT("Safari"));
+    return DefaultBrowser.Contains(TEXT("Google Chrome")) || 
+            DefaultBrowser.Contains(TEXT("Safari")) || 
+            DefaultBrowser.Contains(TEXT("Firefox"));
 }
 
 void UFPrivatelyHttpServer::Log(const FString& Message)
