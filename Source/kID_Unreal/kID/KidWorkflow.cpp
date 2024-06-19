@@ -257,8 +257,6 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
     {
         if (bWasSuccessful && Response.IsValid())
         {
-            UE_LOG(LogTemp, Log, TEXT("Call to /age-gate/get-requirements succeeded: %s"), *Response->GetContentAsString());
-
             TSharedPtr<FJsonObject> JsonResponse;
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, JsonResponse))
@@ -295,10 +293,6 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
                     Callback(false /* ageGateShown */, false /* ageAssuranceRequired */, TEXT(""));
                 }
             }
-        }
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("Call to /age-gate/should-display failed"));
         }
     });
 }
@@ -350,14 +344,7 @@ void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeou
 
         HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/challenge/send-email"), ContentJsonString, AuthToken, [](FHttpResponsePtr Response, bool bWasSuccessful)
         {
-            if (bWasSuccessful && Response.IsValid())
-            {       
-                UE_LOG(LogTemp, Log, TEXT("/challenge/send-email succeeded with %s"), *Response->GetContentAsString());
-            }   
-            else
-            {
-                UE_LOG(LogTemp, Error, TEXT("/challenge/send-email failed"));
-            }
+            // Handle the response if necessary
         });
     });
 
@@ -408,6 +395,16 @@ void UKidWorkflow::CheckForConsent(const FString& ChallengeId, FDateTime StartTi
                 if (Status == TEXT("PASS"))
                 {
                     FString SessionId = JsonResponse->GetStringField(TEXT("sessionId"));
+
+                    FString ApproverEmail = JsonResponse->GetStringField(TEXT("approverEmail"));
+
+                    // At this point, the player has been granted consent and 
+                    // the email of the parent or guardian who granted consent is available
+                    // in the approverEmail field. This can be used for customer service 
+                    // requests later.
+                    //
+                    // StoreEmailForLaterUse(SessionId, ApproverEmail);
+
                     OnConsentGranted(true, SessionId);
                     return;
                 }
@@ -460,13 +457,18 @@ void UKidWorkflow::GetSessionPermissions(const FString& SessionId, const FString
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, SessionInfo))
             {
+                FString dateOfBirth = SessionInfo->GetStringField(TEXT("dateOfBirth"));
+
+                // If the parent modifies the date of birth for their
+                // child in the parent portal, the dateOfBirth field in the session will now
+                // contain the modified value, not the value that the player gave.
+                //
+                // StoreDateOfBirthForLaterUse(dateOfBirth);
+
+                 UE_LOG(LogTemp, Log, TEXT("Updated session."));
                 SaveSessionInfo();
             }
         }   
-        else
-        {
-            UE_LOG(LogTemp, Error, TEXT("/session/get failed"));
-        }
     });
 }
 
@@ -491,16 +493,9 @@ void UKidWorkflow::AttemptTurnOnRestrictedFeature(const FString& FeatureName, TF
 
         FString ManagedBy = PermissionObject->GetStringField(TEXT("managedBy"));
 
-        if (ManagedBy == TEXT("PLAYER"))
+        if (ManagedBy == TEXT("PLAYER") || ManagedBy == TEXT("GUARDIAN"))
         {
-            EnableFeature();
-            PermissionObject->SetBoolField(TEXT("enabled"), true);
-            SaveSessionInfo();
-        }
-        else if (ManagedBy == TEXT("GUARDIAN"))
-        {
-            ShowFeatureConsentChallenge(EnableFeature);
-
+            UpgradeSession(FeatureName, EnableFeature);
         }
         else if (ManagedBy == TEXT("PROHIBITED"))
         {
@@ -513,52 +508,67 @@ void UKidWorkflow::AttemptTurnOnRestrictedFeature(const FString& FeatureName, TF
     }
 }
 
-void UKidWorkflow::ShowFeatureConsentChallenge(TFunction<void()> EnableFeature)
+
+void UKidWorkflow::UpgradeSession(const FString &FeatureName, TFunction<void()> EnableFeature)
 {
-    HttpRequestHelper::GetRequestWithAuth(BaseUrl + TEXT("/session/upgrade"), AuthToken, 
-                        [this, EnableFeature](FHttpResponsePtr Response, bool bWasSuccessful)
+    TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
+    JsonObject->SetStringField(TEXT("sessionId"), SessionInfo->GetStringField(TEXT("sessionId")));
+
+    TSharedPtr<FJsonObject> PermJsonObject = MakeShareable(new FJsonObject());
+    PermJsonObject->SetStringField(TEXT("name"), FeatureName);
+
+    TArray<TSharedPtr<FJsonValue>> JsonArray;
+    JsonArray.Add(MakeShareable(new FJsonValueObject(PermJsonObject)));
+
+    JsonObject->SetArrayField(TEXT("requestedPermissions"), JsonArray);
+
+    FString ContentJsonString;
+    TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ContentJsonString);
+    FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
+
+    HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/session/upgrade"), ContentJsonString, AuthToken, 
+                [this, EnableFeature, FeatureName](FHttpResponsePtr Response, bool bWasSuccessful)
     {
-        if (bWasSuccessful && Response.IsValid())
+        if (bWasSuccessful)
         {
-            FString ChallengeId, QRCodeUrl, OTP;
-            UE_LOG(LogTemp, Log, TEXT("/session/upgrade succeeded with %s"), *Response->GetContentAsString());
             TSharedPtr<FJsonObject> JsonResponse;
             TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(Response->GetContentAsString());
             if (FJsonSerializer::Deserialize(Reader, JsonResponse))
             {
-                ChallengeId = JsonResponse->GetStringField(TEXT("challengeId"));
-                QRCodeUrl = JsonResponse->GetStringField(TEXT("url"));
-                OTP = JsonResponse->GetStringField(TEXT("oneTimePassword"));
-            }
-
-            ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OTP, QRCodeUrl, [this, EnableFeature]
-                        (bool bConsentGranted, const FString& SessionId)
-            {
-                if (bConsentGranted)
+                if (JsonResponse->HasField(TEXT("challenge")))
                 {
-                    GetSessionPermissions(SessionId, TEXT(""));
-                    ClearChallengeId();
+                    TSharedPtr<FJsonObject> Challenge = JsonResponse->GetObjectField(TEXT("challenge"));
+                    FString ChallengeId = Challenge->GetStringField(TEXT("challengeId"));
+                    FString OneTimePassword = Challenge->GetStringField(TEXT("oneTimePassword"));
+                    FString QRCodeUrl = Challenge->GetStringField(TEXT("url"));
+
+                    SaveChallengeId(ChallengeId);
+
+                    ShowConsentChallenge(ChallengeId, ConsentTimeoutSeconds, OneTimePassword, QRCodeUrl, 
+                            [this, EnableFeature, FeatureName](bool bConsentGranted, const FString &SessionId)
+                    {
+                        // TODO: store challenge type and feature name if applicable
+                        ClearChallengeId();
+                        if (bConsentGranted)
+                        {
+                            GetSessionPermissions(SessionId, TEXT(""));
+                            EnableFeature();
+                        }
+                        else
+                        {
+                            // request to turn on feature was denied, don't do anything
+                            UE_LOG(LogTemp, Warning, TEXT("Feature request denied for feature %s."), *FeatureName);
+                        }
+                    });
+                }
+                else if (JsonResponse->HasField(TEXT("session")))
+                {
+                    SessionInfo = JsonResponse->GetObjectField(TEXT("session"));
+                    SaveSessionInfo();
                     EnableFeature();
                 }
-                else
-                {
-                    UE_LOG(LogTemp, Warning, TEXT("Consent for feature was denied."));
-                }
-            });
+            }
         }
-    });
-}
-
-void UKidWorkflow::EnableChat()
-{
-    UE_LOG(LogTemp, Log, TEXT("Text chat has been enabled."));
-}
-
-void UKidWorkflow::AttemptTurnOnChat()
-{
-    AttemptTurnOnRestrictedFeature(TEXT("text-chat-public"), [this]()
-    {
-        EnableChat();
     });
 }
 
@@ -575,7 +585,6 @@ void UKidWorkflow::SetChallengeStatus(const FString& Location)
             int32 age = 0;
             if (FDefaultValueHelper::ParseInt(AgeString, age))
             {
-                // Assign the integer to a JSON object as a number field
                 JsonObject->SetNumberField(TEXT("age"), age);
             }
 
@@ -641,9 +650,8 @@ void UKidWorkflow::HandleProhibitedStatus()
 
 void UKidWorkflow::HandleNoConsent()
 {
-    UE_LOG(LogTemp, Warning, TEXT("Player has no consent.  Stay in Data Lite access mode."));
+    UE_LOG(LogTemp, Warning, TEXT("Player has no consent.  Maintain current state."));
     DismissFloatingChallengeWidget();
-    Mode = AccessMode::DataLite;
 }
 
 void UKidWorkflow::DismissFloatingChallengeWidget()
@@ -669,14 +677,14 @@ void UKidWorkflow::DismissAgeAssuranceWidget()
 void UKidWorkflow::SaveChallengeId(const FString& InChallengeId)
 {
     FFileHelper::SaveStringToFile(InChallengeId, *(FPaths::ProjectSavedDir() + TEXT("/ChallengeId.txt")));
-    UpdateHUDText();
+    UpdateHUD();
 }
 
 void UKidWorkflow::ClearChallengeId()
 {
     IFileManager::Get().Delete(*(FPaths::ProjectSavedDir() + TEXT("/ChallengeId.txt")));
     DismissFloatingChallengeWidget();
-    UpdateHUDText();
+    UpdateHUD();
 }
 
 bool UKidWorkflow::LoadChallengeId(FString& OutChallengeId)
@@ -704,13 +712,19 @@ void UKidWorkflow::ClearSession()
         FloatingChallengeWidget = nullptr;
     }
 
+    if (SettingsWidget && SettingsWidget->IsInViewport())
+    {
+        SettingsWidget->RemoveFromParent();
+        SettingsWidget = nullptr;
+    }
+
     SessionInfo.Reset();
     FString SessionFilePath = FPaths::ProjectSavedDir() + TEXT("/SessionInfo.json");
     if (IFileManager::Get().Delete(*SessionFilePath))
     {
         UE_LOG(LogTemp, Log, TEXT("Session file deleted successfully."));
     }
-    UpdateHUDText();
+    UpdateHUD();
 }
 
 void UKidWorkflow::SaveSessionInfo()
@@ -719,7 +733,7 @@ void UKidWorkflow::SaveSessionInfo()
     TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&SessionString);
     FJsonSerializer::Serialize(SessionInfo.ToSharedRef(), Writer);
     FFileHelper::SaveStringToFile(SessionString, *(FPaths::ProjectSavedDir() + TEXT("/SessionInfo.json")));
-    UpdateHUDText();
+    UpdateHUD();
 }
 
 bool UKidWorkflow::GetSavedSessionInfo()
@@ -732,7 +746,7 @@ bool UKidWorkflow::GetSavedSessionInfo()
         {
             UE_LOG(LogTemp, Log, TEXT("Found saved session."));
             Mode = AccessMode::Full;
-            UpdateHUDText();
+            UpdateHUD();
             return true;
         }
         else
@@ -747,7 +761,7 @@ bool UKidWorkflow::GetSavedSessionInfo()
     return false;
 }
 
-void UKidWorkflow::UpdateHUDText()
+void UKidWorkflow::UpdateHUD()
 {
     if (PlayerHUDWidget)
     {
@@ -765,6 +779,7 @@ void UKidWorkflow::UpdateHUDText()
                         (Mode == AccessMode::None) ? TEXT("None") : 
                             (Mode == AccessMode::DataLite) ? TEXT("Data Lite") : TEXT("Full"));
             PlayerHUDWidget->SetText(HUDText);
+            DemoControlsWidget->SetSettingsButtonVisibility(SessionInfo.IsValid() && SessionInfo->HasField(TEXT("sessionId")));
         } 
         else    
         {
@@ -859,7 +874,7 @@ void UKidWorkflow::ShowPlayerHUD()
                     // Add the widget to the viewport
                     PlayerHUDWidget->AddToViewport();
 
-                    UpdateHUDText();
+                    UpdateHUD();
                 }
             }
         }
@@ -901,6 +916,77 @@ void UKidWorkflow::ShowAgeAssuranceWidget(int32 Age, TFunction<void(bool, int32,
     }
 }
 
+void UKidWorkflow::ShowSettingsWidget()
+{
+    if (GEngine && GEngine->GameViewport)
+    {
+        UClass* SettingsWidgetClass = LoadClass<UUserWidget>(nullptr, TEXT("/Game/kID/Blueprints/BP_SettingsWidget.BP_SettingsWidget_C"));
+        if (SettingsWidgetClass)
+        {
+            SettingsWidget = CreateWidget<USettingsWidget>(GEngine->GameViewport->GetWorld(), SettingsWidgetClass);
+            if (SettingsWidget)
+            {
+                SettingsWidget->InitializeWidget(SessionInfo, [this](const FString& FeatureName, bool bEnabled)
+                {
+                    if (SessionInfo.IsValid() && SessionInfo->HasField(TEXT("sessionId")) )
+                    {
+                        if (bEnabled)
+                        {
+                            // turn the checkbox back off until the feature is actually enabled
+                            SettingsWidget->SyncCheckboxes(SessionInfo);
+                            AttemptTurnOnRestrictedFeature(FeatureName, [this, FeatureName]()
+                            {
+                                // use the new session to sync the the checkbox state which will now
+                                // have the feature turned on
+                                SettingsWidget->SyncCheckboxes(SessionInfo);
+                                EnableInGame(FeatureName, true);
+                            });
+                        }
+                        else
+                        {
+                            // make a local change only for this current game play session
+                            FindPermission(FeatureName)->SetBoolField(TEXT("enabled"), false);
+                            EnableInGame(FeatureName, false);
+                        }
+                    }
+                });
+                SettingsWidget->AddToViewport();
+            }
+        }
+    }
+}
+
+void UKidWorkflow::EnableInGame(const FString &FeatureName, bool bEnabled)
+{
+    // permission has been granted and the feature is enabled in the k-ID session
+    
+    if (FeatureName == TEXT("ai-generated-avatars"))
+    {
+        // Enable ai generated avatars
+        UE_LOG(LogTemp, Log, TEXT("Turned %s ai generated avatars"), bEnabled ? TEXT("on") : TEXT("off"));
+    }
+    else if (FeatureName == TEXT("contextual-ads"))
+    {
+        // Enable contextual ads
+        UE_LOG(LogTemp, Log, TEXT("Turned %s contextual ads"), bEnabled ? TEXT("on") : TEXT("off"));
+    }
+    else if (FeatureName == TEXT("targeted-ads"))
+    {
+        // Enable targeted ads
+        UE_LOG(LogTemp, Log, TEXT("Turned %s targeted ads"), bEnabled ? TEXT("on") : TEXT("off"));
+    }
+    else if (FeatureName == TEXT("multiplayer"))
+    {
+        // Enable multiplayer
+        UE_LOG(LogTemp, Log, TEXT("Turned %s multiplayer"), bEnabled ? TEXT("on") : TEXT("off"));
+    }
+    else if (FeatureName == TEXT("text-chat-private"))
+    {
+        // Enable private text chat
+        UE_LOG(LogTemp, Log, TEXT("Turned %s private text chat"), bEnabled ? TEXT("on") : TEXT("off"));
+    }
+}
+
 void UKidWorkflow::ShowUnavailableWidget()
 {
     if (GEngine && GEngine->GameViewport)
@@ -933,9 +1019,10 @@ TSharedPtr<FJsonObject> UKidWorkflow::FindPermission(const FString& FeatureName)
 
 void UKidWorkflow::CleanUp()
 {
+    UE_LOG(LogTemp, Log, TEXT("Cleaning up."));
+
     DismissAgeAssuranceWidget();
     bShutdown = true;
-    UE_LOG(LogTemp, Log, TEXT("Cleaning up."));
     if (ConsentPollingTimerHandle.IsValid())
     {
         GetWorld()->GetTimerManager().ClearTimer(ConsentPollingTimerHandle);

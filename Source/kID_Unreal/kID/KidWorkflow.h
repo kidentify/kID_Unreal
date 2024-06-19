@@ -7,6 +7,7 @@
 #include "Widgets/UnavailableWidget.h"
 #include "Widgets/DemoControlsWidget.h"
 #include "Widgets/AgeAssuranceWidget.h"
+#include "Widgets/SettingsWidget.h"
 #include "KidWorkflow.generated.h"
 
 UCLASS()
@@ -47,7 +48,7 @@ public:
 
     // feature management - roadmap
     void AttemptTurnOnRestrictedFeature(const FString& FeatureName, TFunction<void()> EnableFeature);
-    void ShowFeatureConsentChallenge(TFunction<void()> OnConsentGranted);
+    void UpgradeSession(const FString &FeatureName, TFunction<void()> EnableFeature);
 
     // managing sessions in local storage
     void SaveSessionInfo();
@@ -65,6 +66,7 @@ public:
     void ShowUnavailableWidget();
     void ShowAgeGate(TSet<FString> allowedAgeGateMethods, TFunction<void(const FString&)> Callback);
     void ShowTestSetChallengeWidget(TFunction<void(const FString&, const FString&)> Callback);
+    void ShowSettingsWidget();
 
     void ShowAgeAssuranceWidget(int32 Age, TFunction<void(bool, int32, int32)> OnAssuranceResponse);
     void DismissAgeAssuranceWidget();
@@ -74,11 +76,10 @@ public:
 
     void ShowDemoControls();
     void ShowPlayerHUD();
-    void UpdateHUDText();
+    void UpdateHUD();
 
-    // Feature-specific functions
-    void AttemptTurnOnChat();
-    void EnableChat();
+    // Connection to enablement of features in the rest of the game.
+    void EnableInGame(const FString &FeatureName, bool bEnabled);
      
 private:
     static bool bShutdown;
@@ -108,4 +109,7 @@ private:
 
     UPROPERTY()
     UDemoControlsWidget* DemoControlsWidget;
+
+    UPROPERTY()
+    USettingsWidget* SettingsWidget;
 };
