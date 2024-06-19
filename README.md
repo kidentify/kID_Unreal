@@ -65,4 +65,4 @@ In order to trigger age estimation using Privately facial scanning, the jurisdic
 Source from an external QR Code generator C++ library called [QR-Code-generator](https://github.com/nayuki/QR-Code-generator) is included in this repo for convenience, but any QR code generation approach can be used as long as it can create a bitmap that can be placed in the 2D Texture in the `FloatingChallengeWidget` class.  
 
 ## Roadmap
-While requesting consent for a single feature is implemented in this demo, it is currently not yet supported in the kID Engine in production.  This is a roadmap feature.
+While requesting consent for a feature is implemented in this demo by checking a feature checkbox in the settings window, it is currently not yet supported in the kID Engine in production.  This is a roadmap feature.
