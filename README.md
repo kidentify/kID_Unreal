@@ -41,7 +41,7 @@ The First Person Unreal sample is unchanged except for integration to k-ID on st
 
 All source code that implements kID workflows resides in the [kID](Source/kID_Unreal/kID) folder.  All of the logic for kID flows is in the [KidWorkflow.cpp](Source/kID_Unreal/kID/KidWorkflow.cpp) class.  
 
-There are 8 widgets implemented as Unreal Blueprints that can be customized.  Each is in the [Content/FirstPerson/Blueprints/kID](Content/kID/Blueprints) directory, and can be found and opened from the Content Drawer in Unreal.  The supporting C++ classes are:
+The demo uses a set of widgets implemented as Unreal Blueprints backed by C++ classes.  Each is in the [Content/FirstPerson/Blueprints/kID](Content/kID/Blueprints) directory, and can be found and opened from the Content Drawer in Unreal.  The supporting C++ classes are:
 - [PlayerHUDWidget.cpp](Source/kID_Unreal/kID/Widgets/PlayerHUDWidget.cpp): Displays information about the current age status, session id, and challenge id.
 - [DemoControlsWidget.cpp](Source/kID_Unreal/kID/Widgets/DemoControlsWidget.cpp): Displays the location field and a submit button as well as the Clear Session button.
 - [AgeGateWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeGateWidget.cpp): Displays an age gate that requests date of birth.
@@ -50,6 +50,7 @@ There are 8 widgets implemented as Unreal Blueprints that can be customized.  Ea
 - [UnavailableWidget.cpp](Source/kID_Unreal/kID/Widgets/UnavailableWidget.cpp): Blocks play when a player fails the consent challenge or is below the minimum age to play the game. 
 - [TestSetChallengeWidget.cpp](Source/kID_Unreal/kID/Widgets/TestSetChallengeWidget.cpp): Calls the `test/set-challenge-status` API to simulate consent for testing purposes. 
 - [AgeAssuranceWidget.cpp](Source/kID_Unreal/kID/Widgets/AgeAssuranceWidget.cpp): Demonstrates age assurance for required jurisdictions (e.g. GB) by presenting a dialog with a yes or no button for testing.
+- [SettingsWidget.cpp](Source/kID_Unreal/kID/Widgets/SettingsWidget.cpp): Displays current permissions, and allows users to set them with consent if necessary.
 
 ## Dependencies
 
@@ -64,4 +65,4 @@ In order to trigger age estimation using Privately facial scanning, the jurisdic
 Source from an external QR Code generator C++ library called [QR-Code-generator](https://github.com/nayuki/QR-Code-generator) is included in this repo for convenience, but any QR code generation approach can be used as long as it can create a bitmap that can be placed in the 2D Texture in the `FloatingChallengeWidget` class.  
 
 ## Roadmap
-While requesting consent for a single feature is implemented in this demo, it is currently not yet supported in the kID Engine in production.  This is a roadmap feature.
+While requesting consent for a feature is implemented in this demo by checking a feature checkbox in the settings window, it is currently not yet supported in the kID Engine in production.  This is a roadmap feature.
