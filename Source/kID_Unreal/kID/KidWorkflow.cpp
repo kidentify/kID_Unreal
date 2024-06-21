@@ -264,7 +264,7 @@ void UKidWorkflow::GetUserAge(const FString& Location, TFunction<void(bool, bool
                 bool bShouldDisplay = JsonResponse->GetBoolField(TEXT("shouldDisplay"));
                 bool bAgeAssuranceRequired = JsonResponse->GetBoolField(TEXT("ageAssuranceRequired"));
 
-                // Extracting extra information about the jurisdiction.  Not used below. 
+                // Extracting extra information about the jurisdiction.  
                 // Can be used to further customize the age gate.
                 int32 DigitalConsentAge = JsonResponse->GetIntegerField(TEXT("digitalConsentAge"));
                 int32 CivilAge = JsonResponse->GetIntegerField(TEXT("civilAge"));

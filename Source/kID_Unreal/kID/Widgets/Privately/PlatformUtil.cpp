@@ -1,3 +1,4 @@
+#include "PlatformUtil.h"
 #ifdef __APPLE__
 #include <Foundation/Foundation.h>
 #include <AppKit/AppKit.h>

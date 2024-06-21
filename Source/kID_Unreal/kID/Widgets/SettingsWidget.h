@@ -2,10 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "Components/CheckBox.h"
+#include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/Button.h"
 #include "SettingsWidget.generated.h"
-
-class UCheckbox;
-class UTextBlock;
 
 UCLASS()
 class USettingsWidget : public UUserWidget
@@ -13,61 +14,33 @@ class USettingsWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    UPROPERTY(meta = (BindWidget))
-    class UCheckBox* ContextualAdsCheckbox;
+    void InitializeWidget(TSharedPtr<FJsonObject> SessionInfo, TFunction<void(const FString&, bool)> InCallback);
+    void SyncCheckboxes(TSharedPtr<FJsonObject> SessionInfo);
+
+private:
+    void CreatePermissionWidgets(TSharedPtr<FJsonObject> SessionInfo);
+    void SetUpFeature(const FString& PermissionName, TSharedPtr<FJsonObject> PermissionObject, UCheckBox* Checkbox, UTextBlock* Text);
+
+    UFUNCTION()
+    void OnAnyCheckBoxChanged(bool bIsChecked);
+
+    TFunction<void(const FString&, bool)> Callback;
 
     UPROPERTY(meta = (BindWidget))
-    class UCheckBox* TargetedAdsCheckbox;
-
-    UPROPERTY(meta = (BindWidget))
-    class UCheckBox* MultiplayerCheckbox;
-
-    UPROPERTY(meta = (BindWidget))
-    class UCheckBox* TextChatPrivateCheckbox;
-
-    UPROPERTY(meta = (BindWidget))
-    class UCheckBox* AIGeneratedAvatarCheckbox;
-
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* ContextualAdsText;
-
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* TargetedAdsText;
-
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* MultiplayerText;
-
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* TextChatPrivateText;
-
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* AIGeneratedAvatarText;
+    class UVerticalBox* FeaturesContainer;
 
     UPROPERTY(meta = (BindWidget))
     class UButton* CancelButton;
 
-    void InitializeWidget(TSharedPtr<FJsonObject> SessionInfo, TFunction<void(const FString &, bool)> InCallback);
-    void SyncCheckboxes(TSharedPtr<FJsonObject> SessionInfo);
+    TMap<FString, UCheckBox*> CheckBoxMap;
+    TMap<FString, UTextBlock*> TextBlockMap;
+    TMap<FString, bool> CheckBoxStates;
 
-private:
-    virtual void NativeConstruct() override;
-
-    UFUNCTION()
-    void OnContextualAdsCheckboxChanged(bool bIsChecked);
-
-    UFUNCTION()
-    void OnTargetedAdsCheckboxChanged(bool bIsChecked);
-
-    UFUNCTION()
-    void OnMultiplayerCheckboxChanged(bool bIsChecked);
-
-    UFUNCTION()
-    void OnTextChatPrivateCheckboxChanged(bool bIsChecked);
-
-    UFUNCTION()
-    void OnAIGeneratedAvatarCheckboxChanged(bool bIsChecked);
-
-    void OnCheckBoxChanged(bool bIsChecked, FString CheckBoxName);
-
-    TFunction<void(const FString &, bool)> Callback;
+    // adding a map of user presentable names for features to be displayed in the UI.  
+    // add your own for any new features you add to the system
+    const TMap<FString, FString> FeatureMappings = {
+        {TEXT("multiplayer"), TEXT("Multiplayer")},
+        {TEXT("text-chat-private"), TEXT("Private Text Chat")},
+        {TEXT("ai-generated-avatars"), TEXT("AI Generated Avatars")}
+    };
 };
