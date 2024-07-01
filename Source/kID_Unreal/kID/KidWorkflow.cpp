@@ -35,6 +35,9 @@ void UKidWorkflow::Initialize(TFunction<void(bool)> Callback)
 { 
     bShutdown = false;
 
+    // this demo is not a typical deployment of k-ID which will generally be behind your game backend.  Therefore 
+    // the use of the api key in a file below is for demo purposes only.  In a standard deployment, the api key should be stored securely
+    // in your server backend and not in a file the client.
     FString ApiKey;
     if (!FFileHelper::LoadFileToString(ApiKey, *(FPaths::ProjectDir() + TEXT("/apikey.txt"))))
     {
@@ -121,7 +124,7 @@ void UKidWorkflow::StartKidSession(const FString& Location)
                             }
                             else
                             {
-                                // using the minimum age as the default DOB 
+                                // using the minimum age as the default DOB as a year
                                 int32 DOBYear = FDateTime::Now().GetYear() - minAge;
                                 UE_LOG(LogTemp, Warning, TEXT("%s%s"),
                                     TEXT("Player's age appears to be less than what was given. "), 
