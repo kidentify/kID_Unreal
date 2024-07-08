@@ -19,7 +19,7 @@ The demo goes through various k-ID workflows as described in the [k-ID Developer
 
 ## Overview
 The k-ID Engine implements a comprehensive compliance workflow depicted in the diagram below:
-![image](https://github.com/kidentify/kID_Unreal/assets/3493285/138ded07-360d-4265-b841-5fcc50ba88f8)
+![image](https://github.com/kidentify/kID_Unreal/assets/3493285/771251ab-ce69-4509-ad16-426fbbc53d82)
 
 The demo provides a sample implementation of this flow chart.
 
