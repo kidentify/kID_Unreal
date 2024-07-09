@@ -18,16 +18,16 @@ The demo goes through various k-ID workflows as described in the [k-ID Developer
 - Click the Play button in Unreal to enter Play In Editor mode
 
 ## Overview
-The k-ID Engine implements a comprehensive compliance workflow depicted in the diagram below:
+The k-ID Engine provides the framework to implement the workflow in the diagram below:
 ![image](https://github.com/kidentify/kID_Unreal/assets/3493285/771251ab-ce69-4509-ad16-426fbbc53d82)
 
-This sample provided an implementation of this flow chart using the k-ID APIs with extra logic to store k-ID sessions and k-ID challenges in local storage.
+The user experience is in the control of the game developer, so this sample provides a default implementation using a collection of Unreal Blueprints.
 
 ## Getting started with the k-ID API
-The [k-ID API Documentation](https://game-api.k-id.com/swagger) provides tools to try out all of the APIs with a valid API key.  You can observe how different API calls used in the demo are used and try different variations of inputs.  
+The [k-ID API Documentation](https://game-api.k-id.com/swagger) provides tools to try out all of the APIs interactively with a valid API key.  You can observe how different API calls used in the demo are used and try different variations of inputs.  
 
 ## Using the Demo
-Enter a valid location (e.g. US-CA, GB, etc.) into the location field at the lower left, and click Start Session.  If this location requires an age gate, then an age gate will be shown.  If the jurisdiction requires parental consent for certain game features at a certain age, and the player is under this age, then a parental consent challenge is shown, and the challenge ID will be displayed in the HUD.  
+To use the demo, enter a valid location (e.g. US-CA, GB, etc.) into the location field at the lower left, and click Start Session.  If this location requires an age gate, then an age gate will be shown.  If the jurisdiction requires parental consent for certain game features at a certain age, and the player is under this age, then a parental consent challenge is shown, and the challenge ID will be displayed in the HUD.  
 
 From the consent challenge window, if an email address is submitted, then a generated email will be sent to that address that contains a link to the kID parent portal.  The QR code will also lead parents to the same location.  There you can validate that you are a parent (a Legal Adult), and can grant permission to the child to play the game.  
 
