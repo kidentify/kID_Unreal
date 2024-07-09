@@ -15,6 +15,8 @@ void UFloatingChallengeWidget::InitializeWidget(UKidWorkflow* InMyKidWorkflow,
 
     KidWorkflow = InMyKidWorkflow;
 
+    EmailSent->SetVisibility(ESlateVisibility::Hidden);
+
     // Set the OTP text
     OTPTextBlock->SetText(FText::FromString(OTP));
 
@@ -98,6 +100,13 @@ void UFloatingChallengeWidget::HandleEmailSubmitted()
     {
         OnEmailSubmitted(EmailTextBox->GetText().ToString());
     }
+    if (EmailSent)
+    {
+        EmailSent->SetVisibility(ESlateVisibility::Visible);
+
+        // Set a timer to hide the text after 5 seconds
+        GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UFloatingChallengeWidget::HideEmailText, 1.0f, false);
+    }
 }
 
 void UFloatingChallengeWidget::OnCancelClicked()
@@ -105,5 +114,13 @@ void UFloatingChallengeWidget::OnCancelClicked()
     if (KidWorkflow) 
     {
         KidWorkflow->HandleNoConsent();
+    }
+}
+
+void UFloatingChallengeWidget::HideEmailText()
+{
+    if (EmailSent)
+    {
+        EmailSent->SetVisibility(ESlateVisibility::Hidden);
     }
 }

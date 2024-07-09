@@ -30,6 +30,9 @@ private:
     UPROPERTY(meta = (BindWidget))
     class UButton* CancelButton;
 
+    UPROPERTY(meta = (BindWidget))
+    class UTextBlock* EmailSent;
+
     FString OTP;
     FString QRCodeUrl;
     TFunction<void(const FString&)> OnEmailSubmitted;
@@ -40,7 +43,12 @@ private:
     UFUNCTION()
     void OnCancelClicked();
 
+    UFUNCTION()
+    void HideEmailText();
+
     UTexture2D* GenerateQRCodeTexture();
 
     UKidWorkflow* KidWorkflow = nullptr;
+
+    FTimerHandle TimerHandle;
 };
