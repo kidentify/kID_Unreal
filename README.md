@@ -19,9 +19,12 @@ The demo goes through various k-ID workflows as described in the [k-ID Developer
 
 ## Overview
 The k-ID Engine implements a comprehensive compliance workflow depicted in the diagram below:
-![image](https://github.com/kidentify/kID_Unreal/assets/3493285/138ded07-360d-4265-b841-5fcc50ba88f8)
+![image](https://github.com/kidentify/kID_Unreal/assets/3493285/771251ab-ce69-4509-ad16-426fbbc53d82)
 
-The demo provides a sample implementation of this flow chart.
+This sample provided an implementation of this flow chart using the k-ID APIs with extra logic to store k-ID sessions and k-ID challenges in local storage.
+
+## Getting started with the k-ID API
+The [k-ID API Documentation](https://game-api.k-id.com/swagger) provides tools to try out all of the APIs with a valid API key.  You can observe how different API calls used in the demo are used and try different variations of inputs.  
 
 ## Using the Demo
 Enter a valid location (e.g. US-CA, GB, etc.) into the location field at the lower left, and click Start Session.  If this location requires an age gate, then an age gate will be shown.  If the jurisdiction requires parental consent for certain game features at a certain age, and the player is under this age, then a parental consent challenge is shown, and the challenge ID will be displayed in the HUD.  
