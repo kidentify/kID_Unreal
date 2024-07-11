@@ -7,7 +7,7 @@
 #include "QR-Code-generator/qrcodegen.hpp"
 
 void UFloatingChallengeWidget::InitializeWidget(UKidWorkflow* InMyKidWorkflow, 
-                    const FString& InOTP, const FString& InQRCodeUrl, TFunction<void(const FString&)> InOnEmailSubmitted)
+                    const FString& InOTP, const FString& InQRCodeUrl, TFunction<void(const FString&, TFunction<void(bool)>)> InOnEmailSubmitted)
 {
     OTP = InOTP;
     QRCodeUrl = InQRCodeUrl;
@@ -98,14 +98,18 @@ void UFloatingChallengeWidget::HandleEmailSubmitted()
 {
     if (OnEmailSubmitted)
     {
-        OnEmailSubmitted(EmailTextBox->GetText().ToString());
-    }
-    if (EmailSent)
-    {
+        EmailSent->SetText(FText::FromString("Sending..."));
         EmailSent->SetVisibility(ESlateVisibility::Visible);
+        OnEmailSubmitted(EmailTextBox->GetText().ToString(), [this](bool bSuccess)
+        {
+            if (EmailSent)
+            {
+                EmailSent->SetText(bSuccess ? FText::FromString("Email sent successfully") : FText::FromString("Failed to send email"));
 
-        // Set a timer to hide the text after 5 seconds
-        GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UFloatingChallengeWidget::HideEmailText, 1.0f, false);
+                // Set a timer to hide the text after 5 seconds
+                GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &UFloatingChallengeWidget::HideEmailText, 2.0f, false);
+            }
+       });
     }
 }
 

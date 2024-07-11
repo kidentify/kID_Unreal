@@ -71,7 +71,7 @@ public:
     void ShowAgeAssuranceWidget(int32 Age, TFunction<void(bool, int32, int32)> OnAssuranceResponse);
     void DismissAgeAssuranceWidget();
 
-    void ShowFloatingChallengeWidget(const FString& OTP, const FString& QRCodeUrl, TFunction<void(const FString&)> OnEmailSubmitted);
+    void ShowFloatingChallengeWidget(const FString& OTP, const FString& QRCodeUrl, TFunction<void(const FString&, TFunction<void(bool)>)> OnEmailSubmitted);
     void DismissFloatingChallengeWidget();
 
     void ShowDemoControls();

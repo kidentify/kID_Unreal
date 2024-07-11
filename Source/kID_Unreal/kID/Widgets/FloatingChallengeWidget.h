@@ -12,7 +12,8 @@ class UFloatingChallengeWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    void InitializeWidget(UKidWorkflow* InGameInstance, const FString& OTP, const FString& QRCodeUrl, TFunction<void(const FString&)> OnEmailSubmitted);
+    void InitializeWidget(UKidWorkflow* InGameInstance, const FString& OTP, const FString& QRCodeUrl, 
+                    TFunction<void(const FString&, TFunction<void(bool)>)> OnEmailSubmitted);
 
 private:
     UPROPERTY(meta = (BindWidget))
@@ -35,7 +36,7 @@ private:
 
     FString OTP;
     FString QRCodeUrl;
-    TFunction<void(const FString&)> OnEmailSubmitted;
+    TFunction<void(const FString&, TFunction<void(bool)>)> OnEmailSubmitted;
 
     UFUNCTION()
     void HandleEmailSubmitted();

@@ -335,7 +335,7 @@ void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeou
 {
     FDateTime StartTime = FDateTime::UtcNow();
 
-    ShowFloatingChallengeWidget(OTP, QRCodeUrl, [this, ChallengeId](const FString& Email)
+    ShowFloatingChallengeWidget(OTP, QRCodeUrl, [this, ChallengeId](const FString& Email, TFunction<void(bool)> OnOperationComplete)
     {
         TSharedPtr<FJsonObject> JsonObject = MakeShareable(new FJsonObject());
         JsonObject->SetStringField(TEXT("email"), Email);
@@ -345,9 +345,9 @@ void UKidWorkflow::ShowConsentChallenge(const FString& ChallengeId, int32 Timeou
         TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&ContentJsonString);
         FJsonSerializer::Serialize(JsonObject.ToSharedRef(), Writer);
 
-        HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/challenge/send-email"), ContentJsonString, AuthToken, [](FHttpResponsePtr Response, bool bWasSuccessful)
+        HttpRequestHelper::PostRequestWithAuth(BaseUrl + TEXT("/challenge/send-email"), ContentJsonString, AuthToken, [OnOperationComplete](FHttpResponsePtr Response, bool bWasSuccessful)
         {
-            // Handle the response if necessary
+            OnOperationComplete(bWasSuccessful && Response.IsValid());
         });
     });
 
@@ -884,7 +884,8 @@ void UKidWorkflow::ShowPlayerHUD()
     }
 }
 
-void UKidWorkflow::ShowFloatingChallengeWidget(const FString& OTP, const FString& QRCodeUrl, TFunction<void(const FString&)> OnEmailSubmitted)
+void UKidWorkflow::ShowFloatingChallengeWidget(const FString& OTP, const FString& QRCodeUrl, 
+                                            TFunction<void(const FString&, TFunction<void(bool)>)> OnEmailSubmitted)
 {
     if (GEngine && GEngine->GameViewport)
     {
