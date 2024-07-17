@@ -21,7 +21,7 @@ The sample provides an implementation of the various k-ID workflows as described
 The k-ID Engine provides the framework to implement the workflow in the diagram below:
 ![image](https://github.com/kidentify/kID_Unreal/assets/3493285/771251ab-ce69-4509-ad16-426fbbc53d82)
 
-The user experience is in the control of the game developer, so this sample provides a default implementation using a collection of Unreal Blueprints.
+The game user experience is in the control of the game developer, and this sample provides a sample UI implementation using a collection of Unreal Blueprints.
 
 ## Getting started with the k-ID API
 The [k-ID API Documentation](https://game-api.k-id.com/swagger) provides tools to try out all of the APIs interactively with a valid API key.  You can observe how different API calls used in the demo are used and try different variations of inputs.  
