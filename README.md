@@ -14,7 +14,7 @@ The sample provides an implementation of the various k-ID workflows as described
 - From the Tools menu in Unreal, select Refresh Visual Studio Code Project, then select Open Visual Studio code
 - Create a file called apikey.txt in the project root directory with your k-ID API key from your k-ID Product
      - **Warning: Do not deploy an API Key in your Unreal binary.  API keys should always be hidden on the server in a real-world implementation to avoid misuse.**
-- If you will integrating Privately, see the instructions in the Dependencies section below
+- If you will be integrating Privately, see the instructions in the Dependencies section below
 - Click the Play button in Unreal to enter Play In Editor mode
 
 ## Overview
