@@ -24,7 +24,7 @@ The k-ID Engine provides the framework to implement the workflow in the diagram 
 The game user experience is in the control of the game developer, and this sample provides a sample UI implementation using a collection of Unreal Blueprints.
 
 ## Getting started with the k-ID API
-The [k-ID API Documentation](https://game-api.k-id.com/swagger) provides tools to try out all of the APIs interactively with a valid API key.  You can observe how different API calls used in the demo are used and try different variations of inputs.  
+The [k-ID API Documentation](https://game-api.k-id.com/swagger/) provides tools to try out all of the APIs interactively with a valid API key.  You can observe how different API calls used in the demo are used and try different variations of inputs.  
 
 ## Using the Demo
 To use the demo, enter a valid location (e.g. US-CA, GB, etc.) into the location field at the lower left, and click Start Session.  If this location requires an age gate, then an age gate will be shown.  If the jurisdiction requires parental consent for certain game features at a certain age, and the player is under this age, then a parental consent challenge is shown, and the challenge ID will be displayed in the HUD.  
