@@ -8,11 +8,11 @@ The sample provides an implementation of the various k-ID workflows as described
 
 ## Installation
 - Clone the repo locally
-- Open the file kID_Unreal.uproject in Unreal 5.4.1
+- Open the file kID_Unreal.uproject in Unreal 5.4.4
 - Install Visual Studio Code and add C++ Plugins
 - Configure the Unreal Engine to use Visual Studio Code as the source code editor as described in the [documentation](https://dev.epicgames.com/documentation/en-us/unreal-engine/setting-up-visual-studio-code-for-unreal-engine)
 - From the Tools menu in Unreal, select Refresh Visual Studio Code Project, then select Open Visual Studio code
-- Create a file called apikey.txt in the project root directory with your k-ID API key from your k-ID Product
+- Create a file called apikey.txt in the project root directory with a Test Mode k-ID API key from your k-ID Product 
      - **Warning: Do not deploy an API Key in your Unreal binary.  API keys should always be hidden on the server in a real-world implementation to avoid misuse.**
 - If you will be integrating Privately, see the instructions in the Dependencies section below
 - Click the Play button in Unreal to enter Play In Editor mode
